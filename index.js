@@ -1,46 +1,43 @@
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
-const { token } = require("./config");
+client.on("interactionCreate", async (interaction) => {
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
+  // Slash Commands
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
 
-client.commands = new Collection();
-const commandsArray = [];
-
-// قراءة كل فولدر الأوامر
-const commandsPath = path.join(__dirname, "commands");
-for (const folder of fs.readdirSync(commandsPath)) {
-  const folderPath = path.join(commandsPath, folder);
-
-  for (const file of fs.readdirSync(folderPath)) {
-    const command = require(path.join(folderPath, file));
-    client.commands.set(command.data.name, command);
-    commandsArray.push(command.data.toJSON());
+    try {
+      await command.execute(interaction);
+    } catch (err) {
+      console.error(err);
+      interaction.reply({ content: "❌ Error", ephemeral: true });
+    }
   }
-}
 
-// تسجيل الأوامر تلقائي
-const rest = new REST({ version: "10" }).setToken(token);
-(async () => {
-  const app = await rest.get(Routes.oauth2CurrentApplication());
-  await rest.put(Routes.applicationCommands(app.id), {
-    body: commandsArray
-  });
-  console.log("✅ Commands Registered");
-})();
+  // Modal Submit
+  if (interaction.isModalSubmit()) {
 
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand() && !interaction.isModalSubmit()) return;
+    if (interaction.customId !== "publish_modal") return;
 
-  const command = client.commands.get(interaction.commandName);
-  if (command) await command.execute(interaction);
+    const title = interaction.fields.getTextInputValue("title");
+    const lang = interaction.fields.getTextInputValue("lang");
+    const code = interaction.fields.getTextInputValue("code");
+
+    const embed = new EmbedBuilder()
+      .setColor("#2f3136")
+      .setTitle(`📦 ${title}`)
+      .setDescription(
+        `\`\`\`${lang}\n${code}\n\`\`\`\n` +
+        `👨‍💻 **Published by:** ${interaction.user}\n` +
+        `📢 <@&${process.env.DEV_ROLE_ID}>\n` +
+        `🔹 **${interaction.guild.name}**`
+      )
+      .setTimestamp();
+
+    await interaction.reply({
+      embeds: [embed],
+      allowedMentions: {
+        roles: [process.env.DEV_ROLE_ID]
+      }
+    });
+  }
 });
-
-client.once("ready", () => {
-  console.log(`🚀 CodeDock Bot is online`);
-});
-
-client.login(token);
