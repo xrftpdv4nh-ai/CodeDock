@@ -11,7 +11,9 @@ const {
   TextInputBuilder,
   TextInputStyle,
   ActionRowBuilder,
-  EmbedBuilder
+  EmbedBuilder,
+  ButtonBuilder,
+  ButtonStyle
 } = require("discord.js");
 
 const fs = require("fs");
@@ -26,7 +28,9 @@ const client = new Client({
 
 client.commands = new Collection();
 
-/* تحميل الأوامر */
+/* =========================
+   Load Commands
+========================= */
 const commandsPath = path.join(__dirname, "commands");
 const commandsArray = [];
 
@@ -40,22 +44,30 @@ for (const folder of fs.readdirSync(commandsPath)) {
   }
 }
 
-/* تسجيل الأوامر */
+/* =========================
+   Register Slash Commands
+========================= */
 const rest = new REST({ version: "10" }).setToken(token);
 
 (async () => {
-  const app = await rest.get(Routes.oauth2CurrentApplication());
-  await rest.put(
-    Routes.applicationCommands(app.id),
-    { body: commandsArray }
-  );
-  console.log("✅ Commands Registered");
+  try {
+    const app = await rest.get(Routes.oauth2CurrentApplication());
+    await rest.put(
+      Routes.applicationCommands(app.id),
+      { body: commandsArray }
+    );
+    console.log("✅ Commands Registered");
+  } catch (err) {
+    console.error(err);
+  }
 })();
 
-/* Events */
+/* =========================
+   Interactions
+========================= */
 client.on("interactionCreate", async (interaction) => {
 
-  // Slash commands
+  /* Slash Commands */
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
@@ -64,11 +76,14 @@ client.on("interactionCreate", async (interaction) => {
       await command.execute(interaction);
     } catch (err) {
       console.error(err);
-      interaction.reply({ content: "❌ Error", ephemeral: true });
+      await interaction.reply({
+        content: "❌ Error executing command",
+        ephemeral: true
+      });
     }
   }
 
-  // Modal submit
+  /* Modal Submit */
   if (interaction.isModalSubmit()) {
     if (interaction.customId !== "publish_modal") return;
 
@@ -87,15 +102,49 @@ client.on("interactionCreate", async (interaction) => {
       )
       .setTimestamp();
 
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("copy_code")
+        .setLabel("📋 Copy Code")
+        .setStyle(ButtonStyle.Secondary)
+    );
+
     await interaction.reply({
       embeds: [embed],
+      components: [row],
       allowedMentions: { roles: [devRoleId] }
+    });
+  }
+
+  /* Copy Button */
+  if (interaction.isButton()) {
+    if (interaction.customId !== "copy_code") return;
+
+    const embed = interaction.message.embeds[0];
+    if (!embed) return;
+
+    const match = embed.description.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
+    if (!match) {
+      return interaction.reply({
+        content: "❌ Code not found",
+        ephemeral: true
+      });
+    }
+
+    const rawCode = match[1];
+
+    await interaction.reply({
+      content: `\`\`\`js\n${rawCode}\n\`\`\``,
+      ephemeral: true
     });
   }
 });
 
+/* =========================
+   Ready
+========================= */
 client.once("ready", () => {
-  console.log(`🚀 CodeDock Bot is online`);
+  console.log("🚀 CodeDock Bot is online");
 });
 
 client.login(token);
