@@ -68,14 +68,19 @@ if (content.startsWith("فتح شوب")) {
   const member = message.mentions.members.first();
   if (!member) return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
 
-  // إنشاء الروم
+  const durationDays = 7;
+  const now = new Date();
+  const endAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
   const channel = await message.guild.channels.create({
     name: `shop-${member.user.username}`,
     parent: SHOP_CATEGORY_ID,
+    topic: `🛒 Shop Owner: ${member.user.tag} | ⏳ Ends: ${endAt.toLocaleString()}`,
     permissionOverwrites: [
       {
         id: message.guild.roles.everyone,
-        deny: ["ViewChannel"]
+        allow: ["ViewChannel"],
+        deny: ["SendMessages"]
       },
       {
         id: member.id,
@@ -84,11 +89,6 @@ if (content.startsWith("فتح شوب")) {
     ]
   });
 
-  const durationDays = 7;
-  const now = new Date();
-  const endAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
-
-  // حفظ في الداتابيز
   await Shop.create({
     guildId: message.guild.id,
     channelId: channel.id,
@@ -99,38 +99,20 @@ if (content.startsWith("فتح شوب")) {
   /* =====================
      كارت داخل الشوب
   ===================== */
-  const shopEmbed = {
-    color: 0x2f3136,
-    title: "🛒 Shop Details",
-    fields: [
-      {
-        name: "👤 صاحب الشوب",
-        value: `${member}`,
-        inline: true
-      },
-      {
-        name: "📅 تاريخ الفتح",
-        value: `<t:${Math.floor(now.getTime() / 1000)}:F>`,
-        inline: true
-      },
-      {
-        name: "⏰ تاريخ الانتهاء",
-        value: `<t:${Math.floor(endAt.getTime() / 1000)}:F>`,
-        inline: true
-      },
-      {
-        name: "⌛ مدة الشوب",
-        value: `${durationDays} أيام`,
-        inline: false
-      }
-    ],
-    footer: {
-      text: "CodeDock • Shop System"
-    },
-    timestamp: new Date()
-  };
-
-  await channel.send({ embeds: [shopEmbed] });
+  await channel.send({
+    embeds: [{
+      color: 0x2f3136,
+      title: "🛒 Shop Information",
+      fields: [
+        { name: "👤 صاحب الشوب", value: `${member}`, inline: true },
+        { name: "📅 تاريخ الفتح", value: `<t:${Math.floor(now / 1000)}:F>`, inline: true },
+        { name: "⏰ تاريخ الانتهاء", value: `<t:${Math.floor(endAt / 1000)}:F>`, inline: true },
+        { name: "⌛ المدة", value: `${durationDays} أيام`, inline: false }
+      ],
+      footer: { text: "CodeDock • Shop System" },
+      timestamp: new Date()
+    }]
+  });
 
   /* =====================
      رسالة في روم الأمر
@@ -140,14 +122,13 @@ if (content.startsWith("فتح شوب")) {
   );
 
   /* =====================
-     حذف تلقائي بعد 7 أيام
+     حذف تلقائي
   ===================== */
   setTimeout(async () => {
     await channel.delete().catch(() => {});
     await Shop.deleteOne({ channelId: channel.id });
   }, durationDays * 24 * 60 * 60 * 1000);
 }
-
       /* =====================
          قفل شوب
       ===================== */
