@@ -10,37 +10,36 @@ module.exports = (client) => {
       // Admin فقط
       if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
 
-      // الأمر
       if (!message.content.startsWith("renewshop")) return;
 
-      const args = message.content.split(" ");
-      const days = parseInt(args[1]);
-
+      const days = parseInt(message.content.split(" ")[1]);
       if (!days || days <= 0) {
         return message.reply("❌ اكتب عدد أيام صحيح.\nمثال: `renewshop 7`");
       }
 
-      // التأكد إن الروم شوب
       const shop = await Shop.findOne({ channelId: message.channel.id });
       if (!shop) {
         return message.reply("❌ هذا الروم ليس شوب.");
       }
 
-      // تحديث تاريخ الانتهاء
+      // تحديث التاريخ
       shop.endAt = new Date(shop.endAt.getTime() + days * 86400000);
+
+      // لو الشوب قديم (مفيش messageId)
+      if (!shop.messageId) {
+        await shop.save();
+        return message.reply(
+          "🔁 تم تجديد الشوب.\n⚠️ هذا شوب قديم ولا يحتوي على كارت أساسي."
+        );
+      }
+
       await shop.save();
 
       /* =====================
          تعديل الكارت الأساسي
       ===================== */
       const channel = message.channel;
-
-      let shopMessage;
-      try {
-        shopMessage = await channel.messages.fetch(shop.messageId);
-      } catch {
-        return message.reply("❌ لم أستطع العثور على كارت الشوب الأساسي.");
-      }
+      const shopMessage = await channel.messages.fetch(shop.messageId);
 
       const updatedEmbed = EmbedBuilder.from(shopMessage.embeds[0])
         .setDescription(
@@ -55,7 +54,6 @@ module.exports = (client) => {
 
       await shopMessage.edit({ embeds: [updatedEmbed] });
 
-      // رد خفيف
       await message.reply("🔁 تم تجديد الشوب وتحديث الكارت الأساسي.");
 
     } catch (err) {
