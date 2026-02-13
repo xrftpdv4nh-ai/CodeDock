@@ -172,8 +172,7 @@ client.on("guildMemberAdd", async (member) => {
    ADMIN & SHOP SYSTEMS
 ========================= */
 require("./handlers/adminTextCommands")(client);
-require("./handlers/shopSystem")(client);
-
+require("./handlers/shop")(client);
 /* =========================
    GLOBAL ERROR PROTECTION
 ========================= */
