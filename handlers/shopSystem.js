@@ -64,70 +64,95 @@ module.exports = (client) => {
 /* =====================
    فتح شوب @user
 ===================== */
-if (content.startsWith("فتح شوب")) {
-  const member = message.mentions.members.first();
-  if (!member) return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
+if (message.content.startsWith("فتح شوب")) {
+  try {
+    const member = message.mentions.members.first();
+    if (!member) {
+      return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
+    }
 
-  const durationDays = 7;
-  const now = new Date();
-  const endAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    const durationDays = 7;
+    const now = new Date();
+    const endAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-  const channel = await message.guild.channels.create({
-    name: `shop-${member.user.username}`,
-    parent: SHOP_CATEGORY_ID,
-    topic: `🛒 Shop Owner: ${member.user.tag} | ⏳ Ends: ${endAt.toLocaleString()}`,
-    permissionOverwrites: [
-      {
-        id: message.guild.roles.everyone,
-        allow: ["ViewChannel"],
-        deny: ["SendMessages"]
-      },
-      {
-        id: member.id,
-        allow: ["ViewChannel", "SendMessages", "AttachFiles", "EmbedLinks"]
-      }
-    ]
-  });
+    // إنشاء الروم
+    const channel = await message.guild.channels.create({
+      name: `shop-${member.user.username}`,
+      parent: SHOP_CATEGORY_ID,
+      lockPermissions: false,
+      topic: `🛒 Shop Owner: ${member.user.tag} | ⏰ Ends: ${endAt.toLocaleString()}`,
+      permissionOverwrites: [
+        {
+          id: message.guild.roles.everyone,
+          allow: ["ViewChannel"],
+          deny: ["SendMessages"]
+        },
+        {
+          id: member.id,
+          allow: ["ViewChannel", "SendMessages", "AttachFiles", "EmbedLinks"]
+        }
+      ]
+    });
 
-  await Shop.create({
-    guildId: message.guild.id,
-    channelId: channel.id,
-    ownerId: member.id,
-    endAt
-  });
+    // حفظ في الداتابيز
+    await Shop.create({
+      guildId: message.guild.id,
+      channelId: channel.id,
+      ownerId: member.id,
+      endAt
+    });
 
-  /* =====================
-     كارت داخل الشوب
-  ===================== */
-  await channel.send({
-    embeds: [{
-      color: 0x2f3136,
-      title: "🛒 Shop Information",
-      fields: [
-        { name: "👤 صاحب الشوب", value: `${member}`, inline: true },
-        { name: "📅 تاريخ الفتح", value: `<t:${Math.floor(now / 1000)}:F>`, inline: true },
-        { name: "⏰ تاريخ الانتهاء", value: `<t:${Math.floor(endAt / 1000)}:F>`, inline: true },
-        { name: "⌛ المدة", value: `${durationDays} أيام`, inline: false }
-      ],
-      footer: { text: "CodeDock • Shop System" },
-      timestamp: new Date()
-    }]
-  });
+    /* =====================
+       إرسال الكارت داخل الشوب
+    ===================== */
+    await channel.send({
+      embeds: [
+        {
+          color: 0x2f3136,
+          title: "🛒 Shop Details",
+          fields: [
+            { name: "👤 صاحب الشوب", value: `${member}`, inline: true },
+            {
+              name: "📅 تاريخ الفتح",
+              value: `<t:${Math.floor(now.getTime() / 1000)}:F>`,
+              inline: true
+            },
+            {
+              name: "⏰ تاريخ الانتهاء",
+              value: `<t:${Math.floor(endAt.getTime() / 1000)}:F>`,
+              inline: true
+            },
+            {
+              name: "⌛ المدة",
+              value: `${durationDays} أيام`,
+              inline: false
+            }
+          ],
+          footer: { text: "CodeDock • Shop System" },
+          timestamp: new Date()
+        }
+      ]
+    });
 
-  /* =====================
-     رسالة في روم الأمر
-  ===================== */
-  await message.reply(
-    `✅ تم فتح شوب لـ ${member}\n📂 الشوب: ${channel}\n⏳ المدة: ${durationDays} أيام`
-  );
+    /* =====================
+       رد في روم الأمر
+    ===================== */
+    await message.reply(
+      `✅ تم فتح شوب لـ ${member}\n📂 الشوب: ${channel}\n⏳ المدة: ${durationDays} أيام`
+    );
 
-  /* =====================
-     حذف تلقائي
-  ===================== */
-  setTimeout(async () => {
-    await channel.delete().catch(() => {});
-    await Shop.deleteOne({ channelId: channel.id });
-  }, durationDays * 24 * 60 * 60 * 1000);
+    /* =====================
+       حذف تلقائي
+    ===================== */
+    setTimeout(async () => {
+      await channel.delete().catch(() => {});
+      await Shop.deleteOne({ channelId: channel.id });
+    }, durationDays * 24 * 60 * 60 * 1000);
+
+  } catch (err) {
+    console.error("Open shop error:", err);
+    message.reply("❌ حصل خطأ أثناء فتح الشوب.");
+  }
 }
       /* =====================
          قفل شوب
