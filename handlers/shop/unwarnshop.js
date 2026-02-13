@@ -4,55 +4,39 @@ const Shop = require("../../database/models/Shop");
 module.exports = (client) => {
   client.on("messageCreate", async (message) => {
     try {
-      if (message.author.bot) return;
-      if (!message.guild) return;
-
-      // Admin فقط
+      if (message.author.bot || !message.guild) return;
       if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
-
-      // الأمر
       if (!message.content.startsWith("unwarnshop")) return;
 
-      const reason =
-        message.content.split(" ").slice(1).join(" ") || "لم يتم تحديد سبب";
-
-      // التأكد إن الروم شوب
       const shop = await Shop.findOne({ channelId: message.channel.id });
-      if (!shop) {
-        return message.reply("❌ هذا الروم ليس شوب.");
-      }
+      if (!shop) return message.reply("❌ هذا الروم ليس شوب.");
 
-      if (!shop.warnings || shop.warnings <= 0) {
-        return message.reply("ℹ️ هذا الشوب لا يمتلك أي تحذيرات.");
-      }
+      if (shop.warnings <= 0)
+        return message.reply("ℹ️ الشوب لا يحتوي على تحذيرات.");
 
-      // إنقاص التحذيرات
       shop.warnings -= 1;
       await shop.save();
 
-      /* =========================
-         ✅ Embed سحب التحذير
-      ========================= */
-      const unwarnEmbed = new EmbedBuilder()
-        .setColor(0x2ecc71)
-        .setTitle("✅ تم سحب تحذير")
+      const mainMsg = await message.channel.messages.fetch(shop.messageId).catch(() => null);
+      if (!mainMsg) return message.reply("❌ لم يتم العثور على الكارت الأساسي.");
+
+      const updatedEmbed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setTitle("🛒 Shop Information")
         .setDescription(
-          `👤 **المالك:** <@${shop.ownerId}>\n` +
-          `⚠️ **عدد التحذيرات الحالي:** ${shop.warnings}/3\n\n` +
-          `📝 **السبب:**\n${reason}`
+          `👤 **المالك:** <@${shop.ownerId}>\n\n` +
+          `⚠️ **عدد التحذيرات:** ${shop.warnings}/3\n\n` +
+          `📅 **تاريخ الانتهاء:** <t:${Math.floor(shop.endAt.getTime() / 1000)}:F>`
         )
-        .setFooter({ text: "CodeDock • Shop Warning System" })
+        .setFooter({ text: "CodeDock • Shop System" })
         .setTimestamp();
 
-      await message.channel.send({ embeds: [unwarnEmbed] });
+      await mainMsg.edit({ embeds: [updatedEmbed] });
 
-      await message.reply("✅ تم سحب تحذير من الشوب بنجاح");
+      await message.reply("✅ تم سحب تحذير من الشوب.");
 
     } catch (err) {
-      console.error("UNWARN SHOP ERROR:", err);
-      message.channel.send(
-        `❌ حصل خطأ أثناء سحب التحذير\n\`\`\`${err.message}\`\`\``
-      ).catch(() => {});
+      console.error("UNWARN ERROR:", err);
     }
   });
 };
