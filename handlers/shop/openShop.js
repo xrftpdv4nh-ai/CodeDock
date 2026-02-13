@@ -42,25 +42,35 @@ module.exports = (client) => {
         lockPermissions: false,
         topic: `Shop Owner: ${user.tag} | Ends: ${new Date(endsAt).toLocaleString()}`,
         permissionOverwrites: [
-          // 👁️ الجميع يشوف فقط
-          {
-            id: message.guild.roles.everyone.id,
-            allow: ["ViewChannel"],
-            deny: ["SendMessages"]
-          },
-          // 🛒 صاحب الشوب
-          {
-            id: user.id,
-            allow: [
-              "ViewChannel",
-              "SendMessages",
-              "AttachFiles",
-              "EmbedLinks",
-              "AddReactions",
-              "ReadMessageHistory"
-            ]
-          }
-        ]
+  // 👁️ everyone يشوف بس
+  {
+    id: message.guild.roles.everyone.id,
+    allow: ["ViewChannel"],
+    deny: [
+      "SendMessages",
+      "CreatePublicThreads",
+      "CreatePrivateThreads",
+      "CreateInstantInvite",
+      "AddReactions"
+    ]
+  },
+
+  // 🛒 صاحب الشوب
+  {
+    id: user.id,
+    allow: [
+      "ViewChannel",
+      "SendMessages",
+      "AttachFiles",
+      "EmbedLinks",
+      "ReadMessageHistory"
+    ],
+    deny: [
+      "CreatePublicThreads",
+      "CreatePrivateThreads"
+    ]
+  }
+]
       });
 
       /* =========================
