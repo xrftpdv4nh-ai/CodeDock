@@ -1,4 +1,5 @@
 const { PermissionFlagsBits } = require("discord.js");
+const mongoose = require("mongoose");
 const Shop = require("../../database/models/Shop");
 
 module.exports = (client) => {
@@ -12,6 +13,11 @@ module.exports = (client) => {
 
       // الأمر
       if (message.content !== "closeshop") return;
+
+      // التأكد إن MongoDB متصلة
+      if (mongoose.connection.readyState !== 1) {
+        return message.reply("❌ قاعدة البيانات غير متصلة حاليًا، حاول بعد قليل.");
+      }
 
       // التأكد إن الروم شوب
       const shop = await Shop.findOne({ channelId: message.channel.id });
@@ -27,6 +33,7 @@ module.exports = (client) => {
 
     } catch (err) {
       console.error("CLOSE SHOP ERROR:", err);
+
       message.channel.send(
         `❌ حصل خطأ أثناء حذف الشوب\n\`\`\`${err.message}\`\`\``
       ).catch(() => {});
