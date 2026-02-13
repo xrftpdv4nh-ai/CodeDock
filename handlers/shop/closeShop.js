@@ -3,15 +3,33 @@ const Shop = require("../../database/models/Shop");
 
 module.exports = (client) => {
   client.on("messageCreate", async (message) => {
-    if (message.author.bot || !message.guild) return;
-    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+    try {
+      if (message.author.bot) return;
+      if (!message.guild) return;
 
-    if (message.content !== "قفل شوب") return;
+      // Admin فقط
+      if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
 
-    const shop = await Shop.findOne({ channelId: message.channel.id });
-    if (!shop) return message.reply("❌ الروم ده مش شوب.");
+      // الأمر
+      if (message.content !== "closeshop") return;
 
-    await Shop.deleteOne({ channelId: message.channel.id });
-    await message.channel.delete().catch(() => {});
+      // التأكد إن الروم شوب
+      const shop = await Shop.findOne({ channelId: message.channel.id });
+      if (!shop) {
+        return message.reply("❌ هذا الروم ليس شوب.");
+      }
+
+      // حذف من الداتابيز
+      await Shop.deleteOne({ channelId: message.channel.id });
+
+      // حذف الروم
+      await message.channel.delete("Shop closed by admin");
+
+    } catch (err) {
+      console.error("CLOSE SHOP ERROR:", err);
+      message.channel.send(
+        `❌ حصل خطأ أثناء حذف الشوب\n\`\`\`${err.message}\`\`\``
+      ).catch(() => {});
+    }
   });
 };
