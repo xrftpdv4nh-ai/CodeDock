@@ -61,44 +61,92 @@ module.exports = (client) => {
       const content = message.content.trim();
       const args = content.split(/\s+/);
 
-      /* =====================
-         فتح شوب @user
-      ===================== */
-      if (content.startsWith("فتح شوب")) {
-        const member = message.mentions.members.first();
-        if (!member) return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
+/* =====================
+   فتح شوب @user
+===================== */
+if (content.startsWith("فتح شوب")) {
+  const member = message.mentions.members.first();
+  if (!member) return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
 
-        const channel = await message.guild.channels.create({
-          name: `shop-${member.user.username}`,
-          parent: SHOP_CATEGORY_ID,
-          permissionOverwrites: [
-            {
-              id: message.guild.roles.everyone,
-              deny: ["ViewChannel"]
-            },
-            {
-              id: member.id,
-              allow: ["ViewChannel", "SendMessages", "AttachFiles", "EmbedLinks"]
-            }
-          ]
-        });
-
-        const endAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-        await Shop.create({
-          guildId: message.guild.id,
-          channelId: channel.id,
-          ownerId: member.id,
-          endAt
-        });
-
-        setTimeout(async () => {
-          await channel.delete().catch(() => {});
-          await Shop.deleteOne({ channelId: channel.id });
-        }, 7 * 24 * 60 * 60 * 1000);
-
-        return message.reply(`✅ تم فتح شوب لـ ${member} لمدة 7 أيام`);
+  // إنشاء الروم
+  const channel = await message.guild.channels.create({
+    name: `shop-${member.user.username}`,
+    parent: SHOP_CATEGORY_ID,
+    permissionOverwrites: [
+      {
+        id: message.guild.roles.everyone,
+        deny: ["ViewChannel"]
+      },
+      {
+        id: member.id,
+        allow: ["ViewChannel", "SendMessages", "AttachFiles", "EmbedLinks"]
       }
+    ]
+  });
+
+  const durationDays = 7;
+  const now = new Date();
+  const endAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+  // حفظ في الداتابيز
+  await Shop.create({
+    guildId: message.guild.id,
+    channelId: channel.id,
+    ownerId: member.id,
+    endAt
+  });
+
+  /* =====================
+     كارت داخل الشوب
+  ===================== */
+  const shopEmbed = {
+    color: 0x2f3136,
+    title: "🛒 Shop Details",
+    fields: [
+      {
+        name: "👤 صاحب الشوب",
+        value: `${member}`,
+        inline: true
+      },
+      {
+        name: "📅 تاريخ الفتح",
+        value: `<t:${Math.floor(now.getTime() / 1000)}:F>`,
+        inline: true
+      },
+      {
+        name: "⏰ تاريخ الانتهاء",
+        value: `<t:${Math.floor(endAt.getTime() / 1000)}:F>`,
+        inline: true
+      },
+      {
+        name: "⌛ مدة الشوب",
+        value: `${durationDays} أيام`,
+        inline: false
+      }
+    ],
+    footer: {
+      text: "CodeDock • Shop System"
+    },
+    timestamp: new Date()
+  };
+
+  await channel.send({ embeds: [shopEmbed] });
+
+  /* =====================
+     رسالة في روم الأمر
+  ===================== */
+  await message.reply(
+    `✅ تم فتح شوب لـ ${member}\n📂 الشوب: ${channel}\n⏳ المدة: ${durationDays} أيام`
+  );
+
+  /* =====================
+     حذف تلقائي بعد 7 أيام
+  ===================== */
+  setTimeout(async () => {
+    await channel.delete().catch(() => {});
+    await Shop.deleteOne({ channelId: channel.id });
+  }, durationDays * 24 * 60 * 60 * 1000);
+}
 
       /* =====================
          قفل شوب
