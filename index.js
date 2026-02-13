@@ -176,7 +176,7 @@ client.on("guildMemberAdd", async (member) => {
    ADMIN TEXT COMMANDS
 ========================= */
 require("./handlers/adminTextCommands")(client);
-
+require("./handlers/shopSystem")(client);
 /* =========================
    READY
 ========================= */
