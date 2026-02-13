@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("./database/mongo")();
 
 const {
   Client,
