@@ -56,13 +56,15 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, "commands");
 const commandsArray = [];
 
-for (const folder of fs.readdirSync(commandsPath)) {
-  const folderPath = path.join(commandsPath, folder);
+if (fs.existsSync(commandsPath)) {
+  for (const folder of fs.readdirSync(commandsPath)) {
+    const folderPath = path.join(commandsPath, folder);
 
-  for (const file of fs.readdirSync(folderPath)) {
-    const command = require(path.join(folderPath, file));
-    client.commands.set(command.data.name, command);
-    commandsArray.push(command.data.toJSON());
+    for (const file of fs.readdirSync(folderPath)) {
+      const command = require(path.join(folderPath, file));
+      client.commands.set(command.data.name, command);
+      commandsArray.push(command.data.toJSON());
+    }
   }
 }
 
@@ -80,7 +82,7 @@ const rest = new REST({ version: "10" }).setToken(token);
     );
     console.log("✅ Slash Commands Registered");
   } catch (err) {
-    console.error(err);
+    console.error("Slash Register Error:", err);
   }
 })();
 
@@ -88,68 +90,63 @@ const rest = new REST({ version: "10" }).setToken(token);
    INTERACTIONS (Slash)
 ========================= */
 client.on("interactionCreate", async (interaction) => {
+  try {
+    if (interaction.isChatInputCommand()) {
 
-  if (interaction.isChatInputCommand()) {
+      if (interaction.commandName === "publish") {
 
-    if (interaction.commandName === "publish") {
+        if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
+          return interaction.reply({
+            content: "❌ الأمر ده مسموح في الروم المخصص فقط.",
+            ephemeral: true
+          });
+        }
 
-      if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
-        return interaction.reply({
-          content: "❌ الأمر ده مسموح في الروم المخصص فقط.",
-          ephemeral: true
-        });
+        if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
+          return interaction.reply({
+            content: "❌ انت مش معاك الرول المسموح لاستخدام الأمر.",
+            ephemeral: true
+          });
+        }
       }
 
-      if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
-        return interaction.reply({
-          content: "❌ انت مش معاك الرول المسموح لاستخدام الأمر.",
-          ephemeral: true
-        });
-      }
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
+
+      await command.execute(interaction);
     }
 
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
+    if (interaction.isModalSubmit()) {
+      if (interaction.customId !== "publish_modal") return;
 
-    try {
-      await command.execute(interaction);
-    } catch (err) {
-      console.error(err);
+      const title = interaction.fields.getTextInputValue("title");
+      const lang = interaction.fields.getTextInputValue("lang");
+      const code = interaction.fields.getTextInputValue("code");
+
+      const embed = new EmbedBuilder()
+        .setColor("#2f3136")
+        .setTitle(`📦 ${title}`)
+        .setDescription(
+          `\`\`\`${lang}\n${code}\n\`\`\`\n` +
+          `👨‍💻 **Published by:** ${interaction.user}\n` +
+          `📢 <@&${MEMBERS_ROLE_ID}>`
+        )
+        .setTimestamp();
+
+      const publishChannel = await client.channels.fetch(PUBLISH_CHANNEL_ID);
+
+      await publishChannel.send({
+        embeds: [embed],
+        allowedMentions: { roles: [MEMBERS_ROLE_ID] }
+      });
+
       await interaction.reply({
-        content: "❌ حصل خطأ أثناء تنفيذ الأمر.",
+        content: "✅ تم نشر الكود بنجاح.",
         ephemeral: true
       });
     }
-  }
-
-  if (interaction.isModalSubmit()) {
-    if (interaction.customId !== "publish_modal") return;
-
-    const title = interaction.fields.getTextInputValue("title");
-    const lang = interaction.fields.getTextInputValue("lang");
-    const code = interaction.fields.getTextInputValue("code");
-
-    const embed = new EmbedBuilder()
-      .setColor("#2f3136")
-      .setTitle(`📦 ${title}`)
-      .setDescription(
-        `\`\`\`${lang}\n${code}\n\`\`\`\n` +
-        `👨‍💻 **Published by:** ${interaction.user}\n` +
-        `📢 <@&${MEMBERS_ROLE_ID}>`
-      )
-      .setTimestamp();
-
-    const publishChannel = await client.channels.fetch(PUBLISH_CHANNEL_ID);
-
-    await publishChannel.send({
-      embeds: [embed],
-      allowedMentions: { roles: [MEMBERS_ROLE_ID] }
-    });
-
-    await interaction.reply({
-      content: "✅ تم نشر الكود بنجاح.",
-      ephemeral: true
-    });
+  } catch (err) {
+    console.error("Interaction Error:", err);
   }
 });
 
@@ -166,17 +163,28 @@ client.on("guildMemberAdd", async (member) => {
     await channel.send(
       `👋 أهلاً بيك ${member} نورت **${member.guild.name}** 💙`
     );
-
   } catch (err) {
     console.error("Welcome / AutoRole Error:", err);
   }
 });
 
 /* =========================
-   ADMIN TEXT COMMANDS
+   ADMIN & SHOP SYSTEMS
 ========================= */
 require("./handlers/adminTextCommands")(client);
 require("./handlers/shopSystem")(client);
+
+/* =========================
+   GLOBAL ERROR PROTECTION
+========================= */
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
 /* =========================
    READY
 ========================= */
