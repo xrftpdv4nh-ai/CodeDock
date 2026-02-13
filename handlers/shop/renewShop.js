@@ -26,25 +26,37 @@ module.exports = (client) => {
         return message.reply("❌ هذا الروم ليس شوب.");
       }
 
-      // تجديد المدة
-      shop.endAt = new Date(shop.endAt.getTime() + days * 24 * 60 * 60 * 1000);
+      // تحديث تاريخ الانتهاء
+      shop.endAt = new Date(shop.endAt.getTime() + days * 86400000);
       await shop.save();
 
       /* =====================
-         Embed التجديد
+         تعديل الكارت الأساسي
       ===================== */
-      const embed = new EmbedBuilder()
-        .setTitle("🔁 تم تجديد الشوب")
-        .setColor(0x2b2d31)
+      const channel = message.channel;
+
+      let shopMessage;
+      try {
+        shopMessage = await channel.messages.fetch(shop.messageId);
+      } catch {
+        return message.reply("❌ لم أستطع العثور على كارت الشوب الأساسي.");
+      }
+
+      const updatedEmbed = EmbedBuilder.from(shopMessage.embeds[0])
         .setDescription(
+          `👤 **المالك:** <@${shop.ownerId}>\n\n` +
           `⏳ **تاريخ الانتهاء الجديد:** <t:${Math.floor(
             shop.endAt.getTime() / 1000
-          )}:F>`
+          )}:F>\n\n` +
+          `⚠️ الروم مخصص للمالك فقط`
         )
         .setFooter({ text: "CodeDock • Shop System" })
         .setTimestamp();
 
-      await message.channel.send({ embeds: [embed] });
+      await shopMessage.edit({ embeds: [updatedEmbed] });
+
+      // رد خفيف
+      await message.reply("🔁 تم تجديد الشوب وتحديث الكارت الأساسي.");
 
     } catch (err) {
       console.error("RENEW SHOP ERROR:", err);
