@@ -17,26 +17,32 @@ const path = require("path");
 ========================= */
 const token = process.env.TOKEN;
 
-// الرول المسموح له يستخدم /publish
+// رول مسموح له يستخدم /publish
 const ALLOWED_ROLE_ID = "1471916122595921964";
 
-// رول الأعضاء (هيتمنشن تحت اسم الناشر)
+// رول الأعضاء (Auto Role + منشن)
 const MEMBERS_ROLE_ID = "1471915317373698211";
 
-// الرومات اللي مسموح فيها كتابة الأمر
+// رومات مسموح فيها كتابة /publish
 const ALLOWED_COMMAND_CHANNELS = [
   "1471922711860089054",
   "1471922345387233475"
 ];
 
-// الروم اللي البوت هينشر فيها الكود
+// روم نشر الأكواد
 const PUBLISH_CHANNEL_ID = "1471923136806260991";
+
+// روم الترحيب
+const WELCOME_CHANNEL_ID = "1471634785091977324";
 
 /* =========================
    CLIENT
 ========================= */
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
 client.commands = new Collection();
@@ -80,12 +86,10 @@ const rest = new REST({ version: "10" }).setToken(token);
 ========================= */
 client.on("interactionCreate", async (interaction) => {
 
-  /* ===== Slash Command ===== */
   if (interaction.isChatInputCommand()) {
 
     if (interaction.commandName === "publish") {
 
-      // تحقق من الروم
       if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
         return interaction.reply({
           content: "❌ الأمر ده مسموح في الروم المخصص فقط.",
@@ -93,7 +97,6 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      // تحقق من الرول
       if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
         return interaction.reply({
           content: "❌ انت مش معاك الرول المسموح لاستخدام الأمر.",
@@ -116,7 +119,6 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 
-  /* ===== Modal Submit ===== */
   if (interaction.isModalSubmit()) {
     if (interaction.customId !== "publish_modal") return;
 
@@ -138,15 +140,34 @@ client.on("interactionCreate", async (interaction) => {
 
     await publishChannel.send({
       embeds: [embed],
-      allowedMentions: {
-        roles: [MEMBERS_ROLE_ID]
-      }
+      allowedMentions: { roles: [MEMBERS_ROLE_ID] }
     });
 
     await interaction.reply({
       content: "✅ تم نشر الكود بنجاح.",
       ephemeral: true
     });
+  }
+});
+
+/* =========================
+   WELCOME + AUTO ROLE
+========================= */
+client.on("guildMemberAdd", async (member) => {
+  try {
+    // إضافة الرول تلقائي
+    await member.roles.add(MEMBERS_ROLE_ID);
+
+    // رسالة ترحيب
+    const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID);
+    if (!channel) return;
+
+    await channel.send(
+      `👋 أهلاً بيك ${member} نورت **${member.guild.name}** 💙`
+    );
+
+  } catch (err) {
+    console.error("Welcome / AutoRole Error:", err);
   }
 });
 
