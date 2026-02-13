@@ -1,74 +1,108 @@
-const { PermissionFlagsBits } = require("discord.js");
+const { PermissionFlagsBits, ChannelType, EmbedBuilder } = require("discord.js");
 const Shop = require("../../database/models/Shop");
 
 const SHOP_CATEGORY_ID = "1471948855821078620";
 
 module.exports = (client) => {
   client.on("messageCreate", async (message) => {
-    if (message.author.bot || !message.guild) return;
-    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
-
-    if (!message.content.startsWith("فتح شوب")) return;
-
     try {
-      const member = message.mentions.members.first();
-      if (!member) return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
+      if (message.author.bot) return;
+      if (!message.guild) return;
 
+      // Admin فقط
+      if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+
+      // لازم الأمر يبدأ بـ "فتح شوب"
+      if (!message.content.startsWith("openshop")) return;
+
+      const user = message.mentions.users.first();
+      if (!user) {
+        return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
+      }
+
+      const category = message.guild.channels.cache.get(SHOP_CATEGORY_ID);
+      if (!category || category.type !== ChannelType.GuildCategory) {
+        return message.reply("❌ كاتيجوري الشوب غير موجودة.");
+      }
+
+      /* =========================
+         🕒 حساب المدة (7 أيام)
+      ========================= */
+      const startsAt = Date.now();
       const durationDays = 7;
-      const now = new Date();
-      const endAt = new Date(now.getTime() + durationDays * 86400000);
+      const endsAt = startsAt + durationDays * 24 * 60 * 60 * 1000;
 
+      /* =========================
+         📢 إنشاء روم الشوب
+      ========================= */
       const channel = await message.guild.channels.create({
-        name: `shop-${member.user.username}`,
+        name: `shop-${user.username}`.toLowerCase(),
+        type: ChannelType.GuildText,
         parent: SHOP_CATEGORY_ID,
         lockPermissions: false,
-        topic: `Shop Owner: ${member.user.tag} | Ends: ${endAt.toLocaleString()}`,
+        topic: `Shop Owner: ${user.tag} | Ends: ${new Date(endsAt).toLocaleString()}`,
         permissionOverwrites: [
+          // 👁️ الجميع يشوف فقط
           {
-            id: message.guild.roles.everyone,
+            id: message.guild.roles.everyone.id,
             allow: ["ViewChannel"],
             deny: ["SendMessages"]
           },
+          // 🛒 صاحب الشوب
           {
-            id: member.id,
-            allow: ["ViewChannel", "SendMessages", "AttachFiles", "EmbedLinks"]
+            id: user.id,
+            allow: [
+              "ViewChannel",
+              "SendMessages",
+              "AttachFiles",
+              "EmbedLinks",
+              "AddReactions",
+              "ReadMessageHistory"
+            ]
           }
         ]
       });
 
+      /* =========================
+         🧾 Embed معلومات الشوب
+      ========================= */
+      const embed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setTitle("🛒 Shop Opened")
+        .setDescription(
+          `👤 **المالك:** <@${user.id}>\n\n` +
+          `📅 **تاريخ البداية:** <t:${Math.floor(startsAt / 1000)}:F>\n` +
+          `⏳ **تاريخ الانتهاء:** <t:${Math.floor(endsAt / 1000)}:F>\n\n` +
+          `⚠️ الروم مخصص للمالك فقط`
+        )
+        .setFooter({ text: "CodeDock • Shop System" })
+        .setTimestamp();
+
+      await channel.send({ embeds: [embed] });
+
+      /* =========================
+         ✅ رد في روم الأمر
+      ========================= */
+      await message.reply(
+        `✅ تم فتح شوب لـ <@${user.id}>\n📂 الشوب: ${channel}\n⏳ المدة: ${durationDays} أيام`
+      );
+
+      /* =========================
+         💾 حفظ في الداتابيز
+      ========================= */
       await Shop.create({
         guildId: message.guild.id,
         channelId: channel.id,
-        ownerId: member.id,
-        endAt
+        ownerId: user.id,
+        endAt: new Date(endsAt)
       });
-
-      await channel.send({
-        embeds: [{
-          color: 0x2f3136,
-          title: "🛒 Shop Details",
-          fields: [
-            { name: "👤 صاحب الشوب", value: `${member}`, inline: true },
-            { name: "📅 الفتح", value: `<t:${Math.floor(now / 1000)}:F>`, inline: true },
-            { name: "⏰ الانتهاء", value: `<t:${Math.floor(endAt / 1000)}:F>`, inline: true },
-            { name: "⌛ المدة", value: `${durationDays} أيام`, inline: false }
-          ],
-          footer: { text: "CodeDock • Shop System" }
-        }]
-      });
-
-      await message.reply(
-        `✅ تم فتح شوب لـ ${member}\n📂 الشوب: ${channel}`
-      );
-
-      setTimeout(async () => {
-        await channel.delete().catch(() => {});
-        await Shop.deleteOne({ channelId: channel.id });
-      }, durationDays * 86400000);
 
     } catch (err) {
-      console.error("OpenShop Error:", err);
-      message.reply("❌ حصل خطأ أثناء فتح الشوب.");
+      console.error("OPEN SHOP TEXT CMD ERROR:", err);
+
+      message.channel.send(
+        `❌ حصل خطأ أثناء فتح الشوب\n\`\`\`${err.message}\`\`\``
+      ).catch(() => {});
     }
   });
 };
