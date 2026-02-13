@@ -41,14 +41,16 @@ const WELCOME_CHANNEL_ID = "1471634785091977324";
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
   ]
 });
 
 client.commands = new Collection();
 
 /* =========================
-   LOAD COMMANDS
+   LOAD SLASH COMMANDS
 ========================= */
 const commandsPath = path.join(__dirname, "commands");
 const commandsArray = [];
@@ -75,14 +77,14 @@ const rest = new REST({ version: "10" }).setToken(token);
       Routes.applicationCommands(app.id),
       { body: commandsArray }
     );
-    console.log("✅ Commands Registered");
+    console.log("✅ Slash Commands Registered");
   } catch (err) {
     console.error(err);
   }
 })();
 
 /* =========================
-   INTERACTIONS
+   INTERACTIONS (Slash)
 ========================= */
 client.on("interactionCreate", async (interaction) => {
 
@@ -155,10 +157,8 @@ client.on("interactionCreate", async (interaction) => {
 ========================= */
 client.on("guildMemberAdd", async (member) => {
   try {
-    // إضافة الرول تلقائي
     await member.roles.add(MEMBERS_ROLE_ID);
 
-    // رسالة ترحيب
     const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID);
     if (!channel) return;
 
@@ -170,6 +170,11 @@ client.on("guildMemberAdd", async (member) => {
     console.error("Welcome / AutoRole Error:", err);
   }
 });
+
+/* =========================
+   ADMIN TEXT COMMANDS
+========================= */
+require("./handlers/adminTextCommands")(client);
 
 /* =========================
    READY
