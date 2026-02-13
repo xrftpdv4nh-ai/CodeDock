@@ -3,4 +3,6 @@ module.exports = (client) => {
   require("./closeShop")(client);
   require("./renameShop")(client);
   require("./renewShop")(client);
+  require("./warnshop")(client);
+  require("./unwarnshop")(client);
 };
