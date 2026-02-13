@@ -19,9 +19,26 @@ const {
 const fs = require("fs");
 const path = require("path");
 
+/* =========================
+   CONFIG
+========================= */
 const token = process.env.TOKEN;
-const devRoleId = process.env.DEV_ROLE_ID;
 
+// الرول المسموح له يستخدم /publish
+const ALLOWED_ROLE_ID = "1471916122595921964";
+
+// الرومات اللي مسموح فيها كتابة الأمر
+const ALLOWED_COMMAND_CHANNELS = [
+  "1471922711860089054",
+  "1471922345387233475"
+];
+
+// الروم اللي البوت هينشر فيها الكود
+const PUBLISH_CHANNEL_ID = "1471923136806260991";
+
+/* =========================
+   CLIENT
+========================= */
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
@@ -29,7 +46,7 @@ const client = new Client({
 client.commands = new Collection();
 
 /* =========================
-   Load Commands
+   LOAD COMMANDS
 ========================= */
 const commandsPath = path.join(__dirname, "commands");
 const commandsArray = [];
@@ -45,7 +62,7 @@ for (const folder of fs.readdirSync(commandsPath)) {
 }
 
 /* =========================
-   Register Slash Commands
+   REGISTER SLASH COMMANDS
 ========================= */
 const rest = new REST({ version: "10" }).setToken(token);
 
@@ -63,12 +80,32 @@ const rest = new REST({ version: "10" }).setToken(token);
 })();
 
 /* =========================
-   Interactions
+   INTERACTIONS
 ========================= */
 client.on("interactionCreate", async (interaction) => {
 
-  /* Slash Commands */
+  /* ===== Slash Command ===== */
   if (interaction.isChatInputCommand()) {
+
+    if (interaction.commandName === "publish") {
+
+      // تحقق من الروم
+      if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
+        return interaction.reply({
+          content: "❌ الأمر ده مسموح في روم النشر فقط.",
+          ephemeral: true
+        });
+      }
+
+      // تحقق من الرول
+      if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
+        return interaction.reply({
+          content: "❌ انت مش معاك الرول المسموح لاستخدام الأمر.",
+          ephemeral: true
+        });
+      }
+    }
+
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
 
@@ -77,13 +114,13 @@ client.on("interactionCreate", async (interaction) => {
     } catch (err) {
       console.error(err);
       await interaction.reply({
-        content: "❌ Error executing command",
+        content: "❌ حصل خطأ أثناء تنفيذ الأمر.",
         ephemeral: true
       });
     }
   }
 
-  /* Modal Submit */
+  /* ===== Modal Submit ===== */
   if (interaction.isModalSubmit()) {
     if (interaction.customId !== "publish_modal") return;
 
@@ -96,9 +133,7 @@ client.on("interactionCreate", async (interaction) => {
       .setTitle(`📦 ${title}`)
       .setDescription(
         `\`\`\`${lang}\n${code}\n\`\`\`\n` +
-        `👨‍💻 **Published by:** ${interaction.user}\n` +
-        `📢 <@&${devRoleId}>\n` +
-        `🔹 **${interaction.guild.name}**`
+        `👨‍💻 **Published by:** ${interaction.user}`
       )
       .setTimestamp();
 
@@ -109,14 +144,20 @@ client.on("interactionCreate", async (interaction) => {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.reply({
+    const publishChannel = await client.channels.fetch(PUBLISH_CHANNEL_ID);
+
+    await publishChannel.send({
       embeds: [embed],
-      components: [row],
-      allowedMentions: { roles: [devRoleId] }
+      components: [row]
+    });
+
+    await interaction.reply({
+      content: "✅ تم نشر الكود بنجاح.",
+      ephemeral: true
     });
   }
 
-  /* Copy Button */
+  /* ===== Copy Button ===== */
   if (interaction.isButton()) {
     if (interaction.customId !== "copy_code") return;
 
@@ -126,7 +167,7 @@ client.on("interactionCreate", async (interaction) => {
     const match = embed.description.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
     if (!match) {
       return interaction.reply({
-        content: "❌ Code not found",
+        content: "❌ لم يتم العثور على الكود.",
         ephemeral: true
       });
     }
@@ -141,10 +182,10 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 /* =========================
-   Ready
+   READY
 ========================= */
 client.once("ready", () => {
-  console.log("🚀 CodeDock Bot is online");
+  console.log(`🚀 CodeDock Bot is online`);
 });
 
 client.login(token);
