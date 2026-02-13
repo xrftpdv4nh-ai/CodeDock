@@ -12,12 +12,22 @@ module.exports = (client) => {
       // Admin فقط
       if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
 
-      // لازم الأمر يبدأ بـ "فتح شوب"
+      // الأمر
       if (!message.content.startsWith("openshop")) return;
 
       const user = message.mentions.users.first();
       if (!user) {
         return message.reply("❌ منشن الشخص اللي هتفتحله الشوب.");
+      }
+
+      // منع تكرار الشوب لنفس الشخص
+      const alreadyHasShop = await Shop.findOne({
+        guildId: message.guild.id,
+        ownerId: user.id
+      });
+
+      if (alreadyHasShop) {
+        return message.reply("❌ المستخدم ده عنده شوب مفتوح بالفعل.");
       }
 
       const category = message.guild.channels.cache.get(SHOP_CATEGORY_ID);
@@ -42,35 +52,35 @@ module.exports = (client) => {
         lockPermissions: false,
         topic: `Shop Owner: ${user.tag} | Ends: ${new Date(endsAt).toLocaleString()}`,
         permissionOverwrites: [
-  // 👁️ everyone يشوف بس
-  {
-    id: message.guild.roles.everyone.id,
-    allow: ["ViewChannel"],
-    deny: [
-      "SendMessages",
-      "CreatePublicThreads",
-      "CreatePrivateThreads",
-      "CreateInstantInvite",
-      "AddReactions"
-    ]
-  },
+          // 👁️ الجميع يشوف فقط
+          {
+            id: message.guild.roles.everyone.id,
+            allow: ["ViewChannel"],
+            deny: [
+              "SendMessages",
+              "CreatePublicThreads",
+              "CreatePrivateThreads",
+              "CreateInstantInvite",
+              "AddReactions"
+            ]
+          },
 
-  // 🛒 صاحب الشوب
-  {
-    id: user.id,
-    allow: [
-      "ViewChannel",
-      "SendMessages",
-      "AttachFiles",
-      "EmbedLinks",
-      "ReadMessageHistory"
-    ],
-    deny: [
-      "CreatePublicThreads",
-      "CreatePrivateThreads"
-    ]
-  }
-]
+          // 🛒 صاحب الشوب
+          {
+            id: user.id,
+            allow: [
+              "ViewChannel",
+              "SendMessages",
+              "AttachFiles",
+              "EmbedLinks",
+              "ReadMessageHistory"
+            ],
+            deny: [
+              "CreatePublicThreads",
+              "CreatePrivateThreads"
+            ]
+          }
+        ]
       });
 
       /* =========================
@@ -88,14 +98,7 @@ module.exports = (client) => {
         .setFooter({ text: "CodeDock • Shop System" })
         .setTimestamp();
 
-      await channel.send({ embeds: [embed] });
-
-      /* =========================
-         ✅ رد في روم الأمر
-      ========================= */
-      await message.reply(
-        `✅ تم فتح شوب لـ <@${user.id}>\n📂 الشوب: ${channel}\n⏳ المدة: ${durationDays} أيام`
-      );
+      const shopMessage = await channel.send({ embeds: [embed] });
 
       /* =========================
          💾 حفظ في الداتابيز
@@ -104,8 +107,16 @@ module.exports = (client) => {
         guildId: message.guild.id,
         channelId: channel.id,
         ownerId: user.id,
-        endAt: new Date(endsAt)
+        endAt: new Date(endsAt),
+        messageId: shopMessage.id
       });
+
+      /* =========================
+         ✅ رد في روم الأمر
+      ========================= */
+      await message.reply(
+        `✅ تم فتح شوب لـ <@${user.id}>\n📂 الشوب: ${channel}\n⏳ المدة: ${durationDays} أيام`
+      );
 
     } catch (err) {
       console.error("OPEN SHOP TEXT CMD ERROR:", err);
