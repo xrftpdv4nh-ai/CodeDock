@@ -6,14 +6,7 @@ const {
   Collection,
   REST,
   Routes,
-  SlashCommandBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  ActionRowBuilder,
-  EmbedBuilder,
-  ButtonBuilder,
-  ButtonStyle
+  EmbedBuilder
 } = require("discord.js");
 
 const fs = require("fs");
@@ -26,6 +19,9 @@ const token = process.env.TOKEN;
 
 // الرول المسموح له يستخدم /publish
 const ALLOWED_ROLE_ID = "1471916122595921964";
+
+// رول الأعضاء (هيتمنشن تحت اسم الناشر)
+const MEMBERS_ROLE_ID = "1471915317373698211";
 
 // الرومات اللي مسموح فيها كتابة الأمر
 const ALLOWED_COMMAND_CHANNELS = [
@@ -92,7 +88,7 @@ client.on("interactionCreate", async (interaction) => {
       // تحقق من الروم
       if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
         return interaction.reply({
-          content: "❌ الأمر ده مسموح في روم النشر فقط.",
+          content: "❌ الأمر ده مسموح في الروم المخصص فقط.",
           ephemeral: true
         });
       }
@@ -133,49 +129,22 @@ client.on("interactionCreate", async (interaction) => {
       .setTitle(`📦 ${title}`)
       .setDescription(
         `\`\`\`${lang}\n${code}\n\`\`\`\n` +
-        `👨‍💻 **Published by:** ${interaction.user}`
+        `👨‍💻 **Published by:** ${interaction.user}\n` +
+        `📢 <@&${MEMBERS_ROLE_ID}>`
       )
       .setTimestamp();
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("copy_code")
-        .setLabel("📋 Copy Code")
-        .setStyle(ButtonStyle.Secondary)
-    );
 
     const publishChannel = await client.channels.fetch(PUBLISH_CHANNEL_ID);
 
     await publishChannel.send({
       embeds: [embed],
-      components: [row]
+      allowedMentions: {
+        roles: [MEMBERS_ROLE_ID]
+      }
     });
 
     await interaction.reply({
       content: "✅ تم نشر الكود بنجاح.",
-      ephemeral: true
-    });
-  }
-
-  /* ===== Copy Button ===== */
-  if (interaction.isButton()) {
-    if (interaction.customId !== "copy_code") return;
-
-    const embed = interaction.message.embeds[0];
-    if (!embed) return;
-
-    const match = embed.description.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
-    if (!match) {
-      return interaction.reply({
-        content: "❌ لم يتم العثور على الكود.",
-        ephemeral: true
-      });
-    }
-
-    const rawCode = match[1];
-
-    await interaction.reply({
-      content: `\`\`\`js\n${rawCode}\n\`\`\``,
       ephemeral: true
     });
   }
@@ -185,7 +154,7 @@ client.on("interactionCreate", async (interaction) => {
    READY
 ========================= */
 client.once("ready", () => {
-  console.log(`🚀 CodeDock Bot is online`);
+  console.log("🚀 CodeDock Bot is online");
 });
 
 client.login(token);
