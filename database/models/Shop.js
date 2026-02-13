@@ -23,11 +23,14 @@ const shopSchema = new mongoose.Schema(
       required: true
     },
 
-    // 🧾 ID رسالة الكارت (اختياري)
+    warnings: {
+      type: Number,
+      default: 0   // ✅ ده المهم
+    },
+
     messageId: {
       type: String,
-      required: false, // ⭐ مهم جدًا
-      default: null
+      default: null // لو حابب تستخدمه بعدين لتعديل الإيمبيد
     }
   },
   {
