@@ -120,7 +120,30 @@ module.exports = (client) => {
       );
       return message.reply("🔒 تم قفل الروم");
     }
+/* =====================
+   HELP (ADMIN ONLY)
+===================== */
+if (command === "help") {
+  return message.reply(`
+📌 **Admin Commands Help**
 
+**Role Management**
+- addrole @user @role
+- removerole @user @role
+
+**Moderation**
+- ban @user [reason]
+- unban userId
+- mute @user time (10m / 1h)
+- unmute @user
+
+**Channel Control**
+- show
+- unshow
+- lock
+- unlock
+`);
+}
     /* =====================
        UNLOCK
     ===================== */
