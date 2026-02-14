@@ -167,6 +167,51 @@ client.on("interactionCreate", async (interaction) => {
           ephemeral: true
         });
       }
+
+      /* 🔹 Embed Builder Modal */
+      if (interaction.customId === "embed_modal") {
+
+        const title = interaction.fields.getTextInputValue("embed_title");
+        const desc = interaction.fields.getTextInputValue("embed_desc");
+        const image = interaction.fields.getTextInputValue("embed_image");
+        let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2b2d31)
+          .setTimestamp();
+
+        if (title) embed.setTitle(title);
+        if (desc) embed.setDescription(desc);
+        if (image && image.startsWith("http")) embed.setImage(image);
+
+        mention = mention.toLowerCase();
+        let mentionText = "";
+
+        if (mention === "here") mentionText = "@here";
+        else if (mention === "everyone") mentionText = "@everyone";
+        else if (mention.match(/^<@&\d+>$|^\d+$/)) {
+          const roleId = mention.replace(/[<@&>]/g, "");
+          mentionText = `<@&${roleId}>`;
+        }
+
+        await interaction.channel.send({
+          content: mentionText || null,
+          embeds: [embed],
+          allowedMentions: {
+            parse:
+              mention === "everyone"
+                ? ["everyone"]
+                : mention === "here"
+                ? ["everyone"]
+                : []
+          }
+        });
+
+        return interaction.reply({
+          content: "✅ تم إرسال الإيمبيد بنجاح",
+          ephemeral: true
+        });
+      }
     }
 
   } catch (err) {
