@@ -89,7 +89,6 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.isChatInputCommand()) {
 
       if (interaction.commandName === "publish") {
-
         if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
           return interaction.reply({
             content: "❌ الأمر ده مسموح في الروم المخصص فقط.",
@@ -116,7 +115,6 @@ client.on("interactionCreate", async (interaction) => {
 
       /* 🔹 Publish Modal */
       if (interaction.customId === "publish_modal") {
-
         const title = interaction.fields.getTextInputValue("title");
         const lang = interaction.fields.getTextInputValue("lang");
         const code = interaction.fields.getTextInputValue("code");
@@ -128,8 +126,7 @@ client.on("interactionCreate", async (interaction) => {
             `\`\`\`${lang}\n${code}\n\`\`\`\n` +
             `👨‍💻 **Published by:** ${interaction.user}\n` +
             `📢 <@&${MEMBERS_ROLE_ID}>`
-          )
-          .setTimestamp();
+          );
 
         const publishChannel = await client.channels.fetch(PUBLISH_CHANNEL_ID);
 
@@ -146,7 +143,6 @@ client.on("interactionCreate", async (interaction) => {
 
       /* 🔹 Post Ad Modal */
       if (interaction.customId === "post_ad_modal") {
-
         const script = interaction.fields.getTextInputValue("ad_script");
         let mention = interaction.fields.getTextInputValue("ad_mention") || "none";
         mention = mention.toLowerCase();
@@ -168,80 +164,55 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-    /* 🔹 Embed Modal */
-if (interaction.customId === "embed_modal") {
+      /* 🔹 Embed Modal */
+      if (interaction.customId === "embed_modal") {
 
-  const title = interaction.fields.getTextInputValue("embed_title");
-  const desc = interaction.fields.getTextInputValue("embed_desc");
-  const image = interaction.fields.getTextInputValue("embed_image");
-  let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
-  mention = mention.toLowerCase();
+        const title = interaction.fields.getTextInputValue("embed_title");
+        const desc = interaction.fields.getTextInputValue("embed_desc");
+        const image = interaction.fields.getTextInputValue("embed_image");
+        let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
+        mention = mention.toLowerCase();
 
-  let mentionText = "";
-  let allowedMentions = { parse: [] };
+        let mentionText = "";
+        let allowedMentions = { parse: [] };
 
-  if (mention === "here") {
-    mentionText = "@here";
-    allowedMentions.parse = ["everyone"];
-  } else if (mention === "everyone") {
-    mentionText = "@everyone";
-    allowedMentions.parse = ["everyone"];
-  } else if (/^\d+$/.test(mention)) {
-    mentionText = `<@&${mention}>`;
-    allowedMentions = { roles: [mention] };
-  }
+        if (mention === "here") {
+          mentionText = "@here";
+          allowedMentions.parse = ["everyone"];
+        } else if (mention === "everyone") {
+          mentionText = "@everyone";
+          allowedMentions.parse = ["everyone"];
+        } else if (/^\d+$/.test(mention)) {
+          mentionText = `<@&${mention}>`;
+          allowedMentions = { roles: [mention] };
+        }
 
-  const embed = new EmbedBuilder()
-    .setColor(0x2b2d31);
+        const embed = new EmbedBuilder().setColor(0x2b2d31);
 
-  // 🧩 Title: **__Title__**
-  if (title) {
-    embed.setTitle(`**__${title}__**`);
-  }
+        if (title) embed.setTitle(`**__${title}__**`);
+        if (desc) embed.setDescription(`**${desc}**`);
+        if (image && image.startsWith("http")) embed.setImage(image);
 
-  // 📝 Description: **Description**
-  if (desc) {
-    embed.setDescription(`**${desc}**`);
-  }
+        if (mentionText) {
+          embed.setFooter({ text: mentionText });
+        }
 
-  // 🖼️ Image
-  if (image && image.startsWith("http")) {
-    embed.setImage(image);
-  }
+        await interaction.channel.send({
+          embeds: [embed],
+          allowedMentions
+        });
 
-  // 🔔 Mention في مكان الوقت (Footer)
-  if (mentionText) {
-    embed.setFooter({ text: mentionText });
-  }
+        return interaction.reply({
+          content: "✅ تم إرسال الـ Embed بنجاح",
+          ephemeral: true
+        });
+      }
+    }
 
-  await interaction.channel.send({
-    embeds: [embed],
-    allowedMentions
-  });
-
-  return interaction.reply({
-    content: "✅ تم إرسال الـ Embed بنجاح",
-    ephemeral: true
-  });
-}
-/* =========================
-   WELCOME + AUTO ROLE
-========================= */
-client.on("guildMemberAdd", async (member) => {
-  try {
-    await member.roles.add(MEMBERS_ROLE_ID);
-
-    const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID);
-    if (!channel) return;
-
-    await channel.send(
-      `👋 أهلاً بيك ${member} نورت **${member.guild.name}** 💙`
-    );
   } catch (err) {
-    console.error("Welcome / AutoRole Error:", err);
+    console.error("Interaction Error:", err);
   }
 });
-
 /* =========================
    ADMIN & SHOP SYSTEMS
 ========================= */
