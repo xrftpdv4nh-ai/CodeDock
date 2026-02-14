@@ -4,7 +4,8 @@ const {
   TextInputBuilder,
   TextInputStyle,
   ActionRowBuilder,
-  PermissionFlagsBits
+  PermissionFlagsBits,
+  EmbedBuilder
 } = require("discord.js");
 
 module.exports = {
