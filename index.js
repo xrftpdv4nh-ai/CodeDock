@@ -16,16 +16,19 @@ const path = require("path");
 /* =========================
    CONFIG
 ========================= */
-const TOKEN = process.env.TOKEN;
+const token = process.env.TOKEN;
 
-// Publish System
-const ALLOWED_PUBLISH_CHANNELS = [
+// ===== Publish System =====
+const PUBLISH_ALLOWED_CHANNELS = [
   "1471922711860089054",
   "1471922345387233475"
 ];
 const PUBLISH_CHANNEL_ID = "1471923136806260991";
-const DEV_ROLE_ID = "1471915084249829572";
-const MEMBER_ROLE_ID = "1471915317373698211";
+
+// ===== Roles =====
+const DEV_ROLE_ID = "1471916122595921964";
+const MEMBERS_ROLE_ID = "1471915317373698211";
+
 /* =========================
    CLIENT
 ========================= */
@@ -51,8 +54,6 @@ if (fs.existsSync(commandsPath)) {
     const folderPath = path.join(commandsPath, folder);
     for (const file of fs.readdirSync(folderPath)) {
       const command = require(path.join(folderPath, file));
-      if (!command?.data?.name) continue;
-
       client.commands.set(command.data.name, command);
       commandsArray.push(command.data.toJSON());
     }
@@ -62,15 +63,14 @@ if (fs.existsSync(commandsPath)) {
 /* =========================
    REGISTER SLASH COMMANDS
 ========================= */
-const rest = new REST({ version: "10" }).setToken(TOKEN);
+const rest = new REST({ version: "10" }).setToken(token);
 
 (async () => {
   try {
     const app = await rest.get(Routes.oauth2CurrentApplication());
-    await rest.put(
-      Routes.applicationCommands(app.id),
-      { body: commandsArray }
-    );
+    await rest.put(Routes.applicationCommands(app.id), {
+      body: commandsArray
+    });
     console.log("✅ Slash Commands Registered");
   } catch (err) {
     console.error("Slash Register Error:", err);
@@ -78,7 +78,7 @@ const rest = new REST({ version: "10" }).setToken(TOKEN);
 })();
 
 /* =========================
-   INTERACTIONS
+   INTERACTIONS (ONE PLACE)
 ========================= */
 client.on("interactionCreate", async (interaction) => {
   try {
@@ -86,45 +86,50 @@ client.on("interactionCreate", async (interaction) => {
     /* ========= SLASH COMMANDS ========= */
     if (interaction.isChatInputCommand()) {
 
-      // 🔒 تقييد /publish بالرومات
-      if (
-        interaction.commandName === "publish" &&
-        !ALLOWED_PUBLISH_CHANNELS.includes(interaction.channelId)
-      ) {
-        return interaction.reply({
-          content: "❌ الأمر ده مسموح في رومات النشر فقط.",
-          ephemeral: true
-        });
+      // publish restriction
+      if (interaction.commandName === "publish") {
+        if (!PUBLISH_ALLOWED_CHANNELS.includes(interaction.channelId)) {
+          return interaction.reply({
+            content: "❌ الأمر ده مسموح في رومات محددة فقط",
+            ephemeral: true
+          });
+        }
+
+        if (!interaction.member.roles.cache.has(DEV_ROLE_ID)) {
+          return interaction.reply({
+            content: "❌ الأمر ده للـ Developers فقط",
+            ephemeral: true
+          });
+        }
       }
 
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
-
-      return await command.execute(interaction);
+      return command.execute(interaction);
     }
 
     /* ========= MODALS ========= */
     if (interaction.isModalSubmit()) {
 
-      /* 🔹 Publish Modal */
+      /* ===== Publish Modal ===== */
       if (interaction.customId === "publish_modal") {
 
         const title = interaction.fields.getTextInputValue("title");
         const lang = interaction.fields.getTextInputValue("lang");
         const code = interaction.fields.getTextInputValue("code");
 
-        const publishChannel =
-          await interaction.guild.channels.fetch(PUBLISH_CHANNEL_ID);
-
         const embed = new EmbedBuilder()
-          .setColor("#5865F2")
+          .setColor("#2f3136")
           .setTitle(`📦 ${title}`)
           .setDescription(
             `\`\`\`${lang}\n${code}\n\`\`\`\n` +
             `👨‍💻 **Published by:** ${interaction.user}\n` +
-            `📢 <@&${MEMBER_ROLE_ID}>`
+            `📢 <@&${DEV_ROLE_ID}>`
           )
           .setTimestamp();
+
+        const publishChannel =
+          await interaction.guild.channels.fetch(PUBLISH_CHANNEL_ID);
 
         await publishChannel.send({
           embeds: [embed],
@@ -137,6 +142,87 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
+      /* ===== Post Ad Modal ===== */
+      if (interaction.customId === "post_ad_modal") {
+
+        const script =
+          interaction.fields.getTextInputValue("ad_script");
+        let mention =
+          interaction.fields.getTextInputValue("ad_mention") || "none";
+
+        mention = mention.toLowerCase();
+        let mentionText = "";
+        let allowedMentions = { parse: [] };
+
+        if (mention === "here") {
+          mentionText = "@here";
+          allowedMentions.parse = ["everyone"];
+        } else if (mention === "everyone") {
+          mentionText = "@everyone";
+          allowedMentions.parse = ["everyone"];
+        }
+
+        await interaction.channel.send({
+          content: `${mentionText}\n${script}`,
+          allowedMentions
+        });
+
+        return interaction.reply({
+          content: "✅ تم نشر الإعلان",
+          ephemeral: true
+        });
+      }
+
+      /* ===== Embed Modal ===== */
+      if (interaction.customId === "embed_modal") {
+
+        const title =
+          interaction.fields.getTextInputValue("embed_title");
+        const desc =
+          interaction.fields.getTextInputValue("embed_desc");
+        const image =
+          interaction.fields.getTextInputValue("embed_image");
+        let mention =
+          interaction.fields.getTextInputValue("embed_mention") || "none";
+
+        mention = mention.toLowerCase();
+        let mentionText = "";
+        let allowedMentions = { parse: [] };
+
+        if (mention === "here") {
+          mentionText = "@here";
+          allowedMentions.parse = ["everyone"];
+        } else if (mention === "everyone") {
+          mentionText = "@everyone";
+          allowedMentions.parse = ["everyone"];
+        } else if (/^\d+$/.test(mention)) {
+          mentionText = `<@&${mention}>`;
+          allowedMentions = { roles: [mention] };
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2b2d31);
+
+        if (title) embed.setTitle(`**__${title}__**`);
+        if (desc) {
+          embed.setDescription(
+            `**${desc}**\n\n${mentionText || ""}`
+          );
+        }
+        if (image && image.startsWith("http")) {
+          embed.setImage(image);
+        }
+
+        await interaction.channel.send({
+          embeds: [embed],
+          allowedMentions
+        });
+
+        return interaction.reply({
+          content: "✅ تم إرسال الـ Embed",
+          ephemeral: true
+        });
+      }
     }
 
   } catch (err) {
@@ -151,7 +237,7 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 /* =========================
-   HANDLERS (بدون برفكس)
+   HANDLERS (TEXT COMMANDS)
 ========================= */
 require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
@@ -164,4 +250,4 @@ client.once("ready", () => {
   console.log("🚀 CodeDock Bot is online");
 });
 
-client.login(TOKEN);
+client.login(token);
