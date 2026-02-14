@@ -1,50 +1,77 @@
-/**
- * Dynamic Arabic Marketing Obfuscation
- * تشفير حروفي ذكي – بدون كلمات ثابتة
- */
-
-const LETTER_MAP = {
-  "ا": "ـ9",
-  "أ": "ـ9",
-  "إ": "ـ9",
-  "ب": "ـ9",
-  "و": "ـ9",
-  "س": "ـ3",
-  "ش": "ـ&",
-  "ر": "ـ9",
-  "م": "ـ9"
-};
-
-function obfuscateWord(word) {
-  let chars = word.split("");
-  let changed = false;
-
-  for (let i = 0; i < chars.length; i++) {
-    const ch = chars[i];
-
-    // نغيّر حرف واحد فقط في الكلمة
-    if (!changed && LETTER_MAP[ch]) {
-      chars[i] = chars[i] + LETTER_MAP[ch];
-      changed = true;
-    }
-  }
-
-  return chars.join("");
-}
+// utils/obfuscateArabic.js
 
 module.exports = function obfuscateArabic(text) {
-  return text
-    .split("\n")
-    .map(line =>
-      line
-        .split(" ")
-        .map(word => {
-          // تجاهل المنشنات والروابط
-          if (word.startsWith("@") || word.startsWith("http")) return word;
+  if (!text || typeof text !== "string") return text;
 
-          return obfuscateWord(word);
-        })
-        .join(" ")
-    )
-    .join("\n");
+  const map = {
+    // ألف
+    "ا": "ـ9",
+    "أ": "ـ9",
+    "إ": "ـ9",
+    "آ": "ـ9",
+
+    // ب ت
+    "ب": "بـ9",
+    "ت": "ت",
+    "ث": "ث",
+
+    // ج ح خ
+    "ج": "ج",
+    "ح": "ح",
+    "خ": "خـ1",
+
+    // د ذ
+    "د": "د",
+    "ذ": "ذ",
+
+    // ر ز
+    "ر": "ر",
+    "ز": "z",
+
+    // س ش
+    "س": "سـ3",
+    "ش": "شـ&",
+
+    // ص ض ط ظ
+    "ص": "ص",
+    "ض": "ض",
+    "ط": "طـL",
+    "ظ": "ظ",
+
+    // ع غ
+    "ع": "ـ3",
+    "غ": "غ",
+
+    // ف ق
+    "ف": "ف",
+    "ق": "ق",
+
+    // ك ل
+    "ك": "كـ9",
+    "ل": "ل",
+
+    // م ن
+    "م": "م",
+    "ن": "ن",
+
+    // ه و ي
+    "ه": "ه",
+    "و": "و",
+    "ي": "ي",
+
+    // تاء مربوطة
+    "ة": "ة",
+
+    // همزات
+    "ء": "",
+    "ؤ": "و",
+    "ئ": "ي"
+  };
+
+  let out = "";
+  for (const ch of text) {
+    out += map[ch] ?? ch;
+  }
+
+  return out;
 };
