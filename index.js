@@ -142,21 +142,30 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      /* =========================
-   WELCOME SYSTEM
+   /* =========================
+   WELCOME + AUTO ROLE
 ========================= */
 const WELCOME_CHANNEL_ID = "1471634785091977324";
+const MEMBER_ROLE_ID = "1471915317373698211";
 
 client.on("guildMemberAdd", async (member) => {
   try {
+    // ➕ إضافة رول العضو تلقائي
+    const role = member.guild.roles.cache.get(MEMBER_ROLE_ID);
+    if (role) {
+      await member.roles.add(role).catch(() => {});
+    }
+
+    // 👋 رسالة الترحيب
     const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID);
     if (!channel) return;
 
     await channel.send(
       `👋 أهلاً بيك ${member} نورت **CodeDock** 💙`
     );
+
   } catch (err) {
-    console.error("WELCOME ERROR:", err);
+    console.error("WELCOME / AUTOROLE ERROR:", err);
   }
 });
       /* ===== Post Ad Modal ===== */
