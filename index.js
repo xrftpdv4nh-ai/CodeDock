@@ -5,29 +5,26 @@ const {
   Client,
   GatewayIntentBits,
   Collection,
-  REST,
-  Routes,
-  EmbedBuilder
+  EmbedBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
 } = require("discord.js");
-
-const fs = require("fs");
-const path = require("path");
 
 /* =========================
    CONFIG
 ========================= */
 const token = process.env.TOKEN;
 
-const ALLOWED_ROLE_ID = "1471916122595921964";
-const MEMBERS_ROLE_ID = "1471915317373698211";
-
-const ALLOWED_COMMAND_CHANNELS = [
-  "1471922711860089054",
-  "1471922345387233475"
-];
-
-const PUBLISH_CHANNEL_ID = "1471923136806260991";
-const WELCOME_CHANNEL_ID = "1471634785091977324";
+// روم فتح الطلب
+const OPEN_ORDER_CHANNEL_ID = "1472297285646811358";
+// روم عرض الطلبات
+const ORDERS_CHANNEL_ID = "1472297493776826481";
+// رول Developer
+const DEVELOPER_ROLE_ID = "1471915084249829572";
 
 /* =========================
    CLIENT
@@ -35,49 +32,38 @@ const WELCOME_CHANNEL_ID = "1471634785091977324";
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ]
 });
 
-client.commands = new Collection();
-
 /* =========================
-   LOAD SLASH COMMANDS
+   MESSAGE COMMAND (order)
 ========================= */
-const commandsPath = path.join(__dirname, "commands");
-const commandsArray = [];
-
-if (fs.existsSync(commandsPath)) {
-  for (const folder of fs.readdirSync(commandsPath)) {
-    const folderPath = path.join(commandsPath, folder);
-
-    for (const file of fs.readdirSync(folderPath)) {
-      const command = require(path.join(folderPath, file));
-      client.commands.set(command.data.name, command);
-      commandsArray.push(command.data.toJSON());
-    }
-  }
-}
-
-/* =========================
-   REGISTER SLASH COMMANDS
-========================= */
-const rest = new REST({ version: "10" }).setToken(token);
-
-(async () => {
+client.on("messageCreate", async (message) => {
   try {
-    const app = await rest.get(Routes.oauth2CurrentApplication());
-    await rest.put(
-      Routes.applicationCommands(app.id),
-      { body: commandsArray }
+    if (message.author.bot || !message.guild) return;
+
+    if (message.content.toLowerCase() !== "order") return;
+    if (message.channel.id !== OPEN_ORDER_CHANNEL_ID) return;
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("open_order")
+        .setLabel("𝗢𝗥𝗗𝗘𝗥")
+        .setStyle(ButtonStyle.Primary)
     );
-    console.log("✅ Slash Commands Registered");
+
+    await message.delete().catch(() => {});
+    await message.channel.send({
+      content: `${message.author}`,
+      components: [row]
+    });
+
   } catch (err) {
-    console.error("Slash Register Error:", err);
+    console.error("ORDER MESSAGE ERROR:", err);
   }
-})();
+});
 
 /* =========================
    INTERACTIONS
@@ -85,105 +71,95 @@ const rest = new REST({ version: "10" }).setToken(token);
 client.on("interactionCreate", async (interaction) => {
   try {
 
-    /* ========= SLASH COMMANDS ========= */
-    if (interaction.isChatInputCommand()) {
+    /* ===== Open Order Button ===== */
+    if (interaction.isButton()) {
 
-      if (interaction.commandName === "publish") {
-        if (!ALLOWED_COMMAND_CHANNELS.includes(interaction.channelId)) {
-          return interaction.reply({
-            content: "❌ الأمر ده مسموح في الروم المخصص فقط.",
-            ephemeral: true
-          });
-        }
+      if (interaction.customId === "open_order") {
 
-        if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
-          return interaction.reply({
-            content: "❌ انت مش معاك الرول المسموح لاستخدام الأمر.",
-            ephemeral: true
-          });
-        }
+        const modal = new ModalBuilder()
+          .setCustomId("order_modal")
+          .setTitle("📦 تفاصيل الطلب");
+
+        const input = new TextInputBuilder()
+          .setCustomId("order_text")
+          .setLabel("اكتب تفاصيل طلبك")
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true);
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(input)
+        );
+
+        return interaction.showModal(modal);
       }
 
-      const command = client.commands.get(interaction.commandName);
-      if (!command) return;
+      /* ===== Delete Order ===== */
+      if (interaction.customId.startsWith("delete_order_")) {
 
-      await command.execute(interaction);
+        const ownerId = interaction.customId.split("_")[2];
+
+        if (
+          interaction.user.id !== ownerId &&
+          !interaction.member.roles.cache.has(DEVELOPER_ROLE_ID)
+        ) {
+          return interaction.reply({
+            content: "❌ لا تملك صلاحية حذف هذا الطلب",
+            ephemeral: true
+          });
+        }
+
+        await interaction.message.delete().catch(() => {});
+      }
     }
 
-    /* ========= MODALS ========= */
+    /* ===== Order Modal Submit ===== */
     if (interaction.isModalSubmit()) {
 
-      /* 🔹 Publish Modal */if (interaction.customId === "embed_modal") {
+      if (interaction.customId === "order_modal") {
 
-  const title = interaction.fields.getTextInputValue("embed_title");
-  const desc = interaction.fields.getTextInputValue("embed_desc");
-  const image = interaction.fields.getTextInputValue("embed_image");
-  let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
+        const orderText =
+          interaction.fields.getTextInputValue("order_text");
 
-  mention = mention.toLowerCase();
+        const ordersChannel =
+          await interaction.guild.channels.fetch(ORDERS_CHANNEL_ID);
 
-  let mentionText = "";
-  let allowedMentions = { parse: [] };
+        const embed = new EmbedBuilder()
+          .setColor(0x2b2d31)
+          .setTitle("📦 طلب جديد")
+          .setDescription(
+            `👤 **صاحب الطلب:** ${interaction.user}\n` +
+            `💻 **Developer:** <@&${DEVELOPER_ROLE_ID}>\n\n` +
+            `📝 **تفاصيل الطلب:**\n${orderText}`
+          )
+          .setTimestamp();
 
-  if (mention === "here") {
-    mentionText = "@here";
-    allowedMentions.parse = ["everyone"];
-  } else if (mention === "everyone") {
-    mentionText = "@everyone";
-    allowedMentions.parse = ["everyone"];
-  } else if (/^\d+$/.test(mention)) {
-    mentionText = `<@&${mention}>`;
-    allowedMentions = { roles: [mention] };
-  }
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`delete_order_${interaction.user.id}`)
+            .setLabel("𝗗𝗘𝗟𝗘𝗧𝗘")
+            .setStyle(ButtonStyle.Danger)
+        );
 
-  let finalDescription = "";
+        await ordersChannel.send({
+          content: `${interaction.user} <@&${DEVELOPER_ROLE_ID}>`,
+          embeds: [embed],
+          components: [row],
+          allowedMentions: {
+            users: [interaction.user.id],
+            roles: [DEVELOPER_ROLE_ID]
+          }
+        });
 
-  if (desc) {
-    finalDescription += `**${desc}**\n\n`;
-  }
-
-  if (mentionText) {
-    finalDescription += mentionText;
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor(0x2b2d31);
-
-  if (title) embed.setTitle(`**__${title}__**`);
-  if (finalDescription) embed.setDescription(finalDescription);
-  if (image && image.startsWith("http")) embed.setImage(image);
-
-  await interaction.channel.send({
-    embeds: [embed],
-    allowedMentions
-  });
-
-  return interaction.reply({
-    content: "✅ تم إرسال الـ Embed بنجاح",
-    ephemeral: true
-  });
-}
+        return interaction.reply({
+          content: "✅ تم إرسال طلبك بنجاح",
+          ephemeral: true
+        });
+      }
     }
 
   } catch (err) {
     console.error("Interaction Error:", err);
   }
-});
-/* =========================
-   ADMIN & SHOP SYSTEMS
-========================= */
-require("./handlers/adminTextCommands")(client);
-require("./handlers/shop")(client);
-
-/* =========================
-   GLOBAL ERROR PROTECTION
-========================= */
-process.on("unhandledRejection", (reason) => {
-  console.error("Unhandled Rejection:", reason);
-});
-
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err);
 });
 
 /* =========================
