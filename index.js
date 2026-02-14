@@ -78,7 +78,7 @@ client.on("interactionCreate", async (interaction) => {
 ========================= */
 require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
-require("./handlers/orderSystem")(client); // 👈 النظام الجديد
+require("./handlers/order")(client); // 👈 النظام الجديد
 
 client.once("ready", () => {
   console.log("🚀 CodeDock Bot is online");
