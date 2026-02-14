@@ -168,57 +168,62 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      /* 🔹 Embed Builder Modal */
-      if (interaction.customId === "embed_modal") {
+    /* 🔹 Embed Modal */
+if (interaction.customId === "embed_modal") {
 
-        const title = interaction.fields.getTextInputValue("embed_title");
-        const desc = interaction.fields.getTextInputValue("embed_desc");
-        const image = interaction.fields.getTextInputValue("embed_image");
-        let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
+  const title = interaction.fields.getTextInputValue("embed_title");
+  const desc = interaction.fields.getTextInputValue("embed_desc");
+  const image = interaction.fields.getTextInputValue("embed_image");
+  let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
+  mention = mention.toLowerCase();
 
-        const embed = new EmbedBuilder()
-          .setColor(0x2b2d31)
-          .setTimestamp();
+  let mentionText = "";
+  let allowedMentions = { parse: [] };
 
-        if (title) embed.setTitle(title);
-        if (desc) embed.setDescription(desc);
-        if (image && image.startsWith("http")) embed.setImage(image);
-
-        mention = mention.toLowerCase();
-        let mentionText = "";
-
-        if (mention === "here") mentionText = "@here";
-        else if (mention === "everyone") mentionText = "@everyone";
-        else if (mention.match(/^<@&\d+>$|^\d+$/)) {
-          const roleId = mention.replace(/[<@&>]/g, "");
-          mentionText = `<@&${roleId}>`;
-        }
-
-        await interaction.channel.send({
-          content: mentionText || null,
-          embeds: [embed],
-          allowedMentions: {
-            parse:
-              mention === "everyone"
-                ? ["everyone"]
-                : mention === "here"
-                ? ["everyone"]
-                : []
-          }
-        });
-
-        return interaction.reply({
-          content: "✅ تم إرسال الإيمبيد بنجاح",
-          ephemeral: true
-        });
-      }
-    }
-
-  } catch (err) {
-    console.error("Interaction Error:", err);
+  if (mention === "here") {
+    mentionText = "@here";
+    allowedMentions.parse = ["everyone"];
+  } else if (mention === "everyone") {
+    mentionText = "@everyone";
+    allowedMentions.parse = ["everyone"];
+  } else if (/^\d+$/.test(mention)) {
+    mentionText = `<@&${mention}>`;
+    allowedMentions = { roles: [mention] };
   }
-});
 
+  const embed = new EmbedBuilder()
+    .setColor(0x2b2d31);
+
+  // 🧩 Title: **__Title__**
+  if (title) {
+    embed.setTitle(`**__${title}__**`);
+  }
+
+  // 📝 Description: **Description**
+  if (desc) {
+    embed.setDescription(`**${desc}**`);
+  }
+
+  // 🖼️ Image
+  if (image && image.startsWith("http")) {
+    embed.setImage(image);
+  }
+
+  // 🔔 Mention في مكان الوقت (Footer)
+  if (mentionText) {
+    embed.setFooter({ text: mentionText });
+  }
+
+  await interaction.channel.send({
+    embeds: [embed],
+    allowedMentions
+  });
+
+  return interaction.reply({
+    content: "✅ تم إرسال الـ Embed بنجاح",
+    ephemeral: true
+  });
+}
 /* =========================
    WELCOME + AUTO ROLE
 ========================= */
