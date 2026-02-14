@@ -25,7 +25,7 @@ const ALLOWED_PUBLISH_CHANNELS = [
 ];
 const PUBLISH_CHANNEL_ID = "1471923136806260991";
 const DEV_ROLE_ID = "1471915084249829572";
-
+const MEMBER_ROLE_ID = "1471915317373698211";
 /* =========================
    CLIENT
 ========================= */
@@ -122,7 +122,7 @@ client.on("interactionCreate", async (interaction) => {
           .setDescription(
             `\`\`\`${lang}\n${code}\n\`\`\`\n` +
             `👨‍💻 **Published by:** ${interaction.user}\n` +
-            `📢 <@&${DEV_ROLE_ID}>`
+            `📢 <@&${MEMBER_ROLE_ID}>`
           )
           .setTimestamp();
 
