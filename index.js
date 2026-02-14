@@ -29,6 +29,9 @@ const PUBLISH_CHANNEL_ID = "1471923136806260991";
 const DEV_ROLE_ID = "1471916122595921964";
 const MEMBERS_ROLE_ID = "1471915317373698211";
 
+// ===== Welcome =====
+const WELCOME_CHANNEL_ID = "1471634785091977324";
+
 /* =========================
    CLIENT
 ========================= */
@@ -68,9 +71,10 @@ const rest = new REST({ version: "10" }).setToken(token);
 (async () => {
   try {
     const app = await rest.get(Routes.oauth2CurrentApplication());
-    await rest.put(Routes.applicationCommands(app.id), {
-      body: commandsArray
-    });
+    await rest.put(
+      Routes.applicationCommands(app.id),
+      { body: commandsArray }
+    );
     console.log("✅ Slash Commands Registered");
   } catch (err) {
     console.error("Slash Register Error:", err);
@@ -83,10 +87,9 @@ const rest = new REST({ version: "10" }).setToken(token);
 client.on("interactionCreate", async (interaction) => {
   try {
 
-    /* ========= SLASH COMMANDS ========= */
+    /* ===== SLASH COMMANDS ===== */
     if (interaction.isChatInputCommand()) {
 
-      // publish restriction
       if (interaction.commandName === "publish") {
         if (!PUBLISH_ALLOWED_CHANNELS.includes(interaction.channelId)) {
           return interaction.reply({
@@ -108,12 +111,11 @@ client.on("interactionCreate", async (interaction) => {
       return command.execute(interaction);
     }
 
-    /* ========= MODALS ========= */
+    /* ===== MODALS ===== */
     if (interaction.isModalSubmit()) {
 
-      /* ===== Publish Modal ===== */
+      // Publish
       if (interaction.customId === "publish_modal") {
-
         const title = interaction.fields.getTextInputValue("title");
         const lang = interaction.fields.getTextInputValue("lang");
         const code = interaction.fields.getTextInputValue("code");
@@ -142,41 +144,12 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-   /* =========================
-   WELCOME + AUTO ROLE
-========================= */
-const WELCOME_CHANNEL_ID = "1471634785091977324";
-const MEMBER_ROLE_ID = "1471915317373698211";
-
-client.on("guildMemberAdd", async (member) => {
-  try {
-    // ➕ إضافة رول العضو تلقائي
-    const role = member.guild.roles.cache.get(MEMBER_ROLE_ID);
-    if (role) {
-      await member.roles.add(role).catch(() => {});
-    }
-
-    // 👋 رسالة الترحيب
-    const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID);
-    if (!channel) return;
-
-    await channel.send(
-      `👋 أهلاً بيك ${member} نورت **CodeDock** 💙`
-    );
-
-  } catch (err) {
-    console.error("WELCOME / AUTOROLE ERROR:", err);
-  }
-});
-      /* ===== Post Ad Modal ===== */
+      // Post Ad
       if (interaction.customId === "post_ad_modal") {
-
-        const script =
-          interaction.fields.getTextInputValue("ad_script");
-        let mention =
-          interaction.fields.getTextInputValue("ad_mention") || "none";
-
+        const script = interaction.fields.getTextInputValue("ad_script");
+        let mention = interaction.fields.getTextInputValue("ad_mention") || "none";
         mention = mention.toLowerCase();
+
         let mentionText = "";
         let allowedMentions = { parse: [] };
 
@@ -199,17 +172,12 @@ client.on("guildMemberAdd", async (member) => {
         });
       }
 
-      /* ===== Embed Modal ===== */
+      // Embed
       if (interaction.customId === "embed_modal") {
-
-        const title =
-          interaction.fields.getTextInputValue("embed_title");
-        const desc =
-          interaction.fields.getTextInputValue("embed_desc");
-        const image =
-          interaction.fields.getTextInputValue("embed_image");
-        let mention =
-          interaction.fields.getTextInputValue("embed_mention") || "none";
+        const title = interaction.fields.getTextInputValue("embed_title");
+        const desc = interaction.fields.getTextInputValue("embed_desc");
+        const image = interaction.fields.getTextInputValue("embed_image");
+        let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
 
         mention = mention.toLowerCase();
         let mentionText = "";
@@ -226,18 +194,11 @@ client.on("guildMemberAdd", async (member) => {
           allowedMentions = { roles: [mention] };
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(0x2b2d31);
+        const embed = new EmbedBuilder().setColor(0x2b2d31);
 
         if (title) embed.setTitle(`**__${title}__**`);
-        if (desc) {
-          embed.setDescription(
-            `**${desc}**\n\n${mentionText || ""}`
-          );
-        }
-        if (image && image.startsWith("http")) {
-          embed.setImage(image);
-        }
+        if (desc) embed.setDescription(`**${desc}**\n\n${mentionText}`);
+        if (image && image.startsWith("http")) embed.setImage(image);
 
         await interaction.channel.send({
           embeds: [embed],
@@ -263,7 +224,26 @@ client.on("guildMemberAdd", async (member) => {
 });
 
 /* =========================
-   HANDLERS (TEXT COMMANDS)
+   WELCOME + AUTO ROLE
+========================= */
+client.on("guildMemberAdd", async (member) => {
+  try {
+    const role = member.guild.roles.cache.get(MEMBERS_ROLE_ID);
+    if (role) await member.roles.add(role);
+
+    const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+    if (!channel) return;
+
+    await channel.send(
+      `👋 أهلاً بيك ${member} نورت **CodeDock** 💙`
+    );
+  } catch (err) {
+    console.error("WELCOME ERROR:", err);
+  }
+});
+
+/* =========================
+   HANDLERS
 ========================= */
 require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
