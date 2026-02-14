@@ -256,14 +256,15 @@ client.on("interactionCreate", async (interaction) => {
           interaction.fields.getTextInputValue("encrypt_text");
 
         // تشفير Base64 (آمن للنسخ)
-        const encrypted =
-          Buffer.from(text, "utf8").toString("base64");
+        const obfuscateArabic = require("../../utils/obfuscateArabic");
 
-        return interaction.reply({
-          content:
-            `🔐 **النص المشفّر:**\n\`\`\`\n${encrypted}\n\`\`\`\n📋 يمكنك نسخه الآن`,
-          ephemeral: true
-        });
+const originalText = interaction.fields.getTextInputValue("encrypt_text");
+const encryptedText = obfuscateArabic(originalText);
+
+await interaction.reply({
+  content: `🔐 **النص المشفر:**\n\n${encryptedText}`,
+  ephemeral: true
+});
       }
     }
 
