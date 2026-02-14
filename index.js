@@ -142,6 +142,23 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
+      /* =========================
+   WELCOME SYSTEM
+========================= */
+const WELCOME_CHANNEL_ID = "1471634785091977324";
+
+client.on("guildMemberAdd", async (member) => {
+  try {
+    const channel = await member.guild.channels.fetch(WELCOME_CHANNEL_ID);
+    if (!channel) return;
+
+    await channel.send(
+      `👋 أهلاً بيك ${member} نورت **CodeDock** 💙`
+    );
+  } catch (err) {
+    console.error("WELCOME ERROR:", err);
+  }
+});
       /* ===== Post Ad Modal ===== */
       if (interaction.customId === "post_ad_modal") {
 
