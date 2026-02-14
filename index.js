@@ -7,7 +7,11 @@ const {
   Collection,
   REST,
   Routes,
-  EmbedBuilder
+  EmbedBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder
 } = require("discord.js");
 
 const fs = require("fs");
@@ -111,11 +115,36 @@ client.on("interactionCreate", async (interaction) => {
       return command.execute(interaction);
     }
 
+    /* ===== BUTTONS ===== */
+    if (interaction.isButton()) {
+
+      // Encrypt Button
+      if (interaction.customId === "encrypt_post") {
+
+        const modal = new ModalBuilder()
+          .setCustomId("encrypt_modal")
+          .setTitle("🔐 تشفير منشور");
+
+        const input = new TextInputBuilder()
+          .setCustomId("encrypt_text")
+          .setLabel("اكتب النص المراد تشفيره")
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true);
+
+        modal.addComponents(
+          new ActionRowBuilder().addComponents(input)
+        );
+
+        return interaction.showModal(modal);
+      }
+    }
+
     /* ===== MODALS ===== */
     if (interaction.isModalSubmit()) {
 
-      // Publish
+      /* === Publish Modal === */
       if (interaction.customId === "publish_modal") {
+
         const title = interaction.fields.getTextInputValue("title");
         const lang = interaction.fields.getTextInputValue("lang");
         const code = interaction.fields.getTextInputValue("code");
@@ -144,10 +173,14 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      // Post Ad
+      /* === Post Ad Modal === */
       if (interaction.customId === "post_ad_modal") {
-        const script = interaction.fields.getTextInputValue("ad_script");
-        let mention = interaction.fields.getTextInputValue("ad_mention") || "none";
+
+        const script =
+          interaction.fields.getTextInputValue("ad_script");
+        let mention =
+          interaction.fields.getTextInputValue("ad_mention") || "none";
+
         mention = mention.toLowerCase();
 
         let mentionText = "";
@@ -172,12 +205,17 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      // Embed
+      /* === Embed Modal === */
       if (interaction.customId === "embed_modal") {
-        const title = interaction.fields.getTextInputValue("embed_title");
-        const desc = interaction.fields.getTextInputValue("embed_desc");
-        const image = interaction.fields.getTextInputValue("embed_image");
-        let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
+
+        const title =
+          interaction.fields.getTextInputValue("embed_title");
+        const desc =
+          interaction.fields.getTextInputValue("embed_desc");
+        const image =
+          interaction.fields.getTextInputValue("embed_image");
+        let mention =
+          interaction.fields.getTextInputValue("embed_mention") || "none";
 
         mention = mention.toLowerCase();
         let mentionText = "";
@@ -210,6 +248,23 @@ client.on("interactionCreate", async (interaction) => {
           ephemeral: true
         });
       }
+
+      /* === Encrypt Modal (Only See) === */
+      if (interaction.customId === "encrypt_modal") {
+
+        const text =
+          interaction.fields.getTextInputValue("encrypt_text");
+
+        // تشفير Base64 (آمن للنسخ)
+        const encrypted =
+          Buffer.from(text, "utf8").toString("base64");
+
+        return interaction.reply({
+          content:
+            `🔐 **النص المشفّر:**\n\`\`\`\n${encrypted}\n\`\`\`\n📋 يمكنك نسخه الآن`,
+          ephemeral: true
+        });
+      }
     }
 
   } catch (err) {
@@ -231,7 +286,8 @@ client.on("guildMemberAdd", async (member) => {
     const role = member.guild.roles.cache.get(MEMBERS_ROLE_ID);
     if (role) await member.roles.add(role);
 
-    const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+    const channel =
+      member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (!channel) return;
 
     await channel.send(
