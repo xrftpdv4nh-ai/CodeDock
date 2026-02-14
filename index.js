@@ -1,10 +1,11 @@
 require("dotenv").config();
-require("./database/mongo")();
 
 const {
   Client,
   GatewayIntentBits,
   Collection,
+  REST,
+  Routes,
   EmbedBuilder,
   ModalBuilder,
   TextInputBuilder,
@@ -25,6 +26,8 @@ const OPEN_ORDER_CHANNEL_ID = "1472297285646811358";
 const ORDERS_CHANNEL_ID = "1472297493776826481";
 // رول Developer
 const DEVELOPER_ROLE_ID = "1471915084249829572";
+// رول المنشن فوق زر ORDER
+const MEMBER_ROLE_ID = "1471915317373698211";
 
 /* =========================
    CLIENT
@@ -37,22 +40,61 @@ const client = new Client({
   ]
 });
 
+client.commands = new Collection();
+
+/* =========================
+   LOAD SLASH COMMANDS
+========================= */
+const fs = require("fs");
+const path = require("path");
+
+const commandsPath = path.join(__dirname, "commands");
+const commandsArray = [];
+
+if (fs.existsSync(commandsPath)) {
+  for (const folder of fs.readdirSync(commandsPath)) {
+    const folderPath = path.join(commandsPath, folder);
+
+    for (const file of fs.readdirSync(folderPath)) {
+      const command = require(path.join(folderPath, file));
+      client.commands.set(command.data.name, command);
+      commandsArray.push(command.data.toJSON());
+    }
+  }
+}
+
+/* =========================
+   REGISTER SLASH COMMANDS
+========================= */
+const rest = new REST({ version: "10" }).setToken(token);
+
+(async () => {
+  try {
+    const app = await rest.get(Routes.oauth2CurrentApplication());
+    await rest.put(
+      Routes.applicationCommands(app.id),
+      { body: commandsArray }
+    );
+    console.log("✅ Slash Commands Registered");
+  } catch (err) {
+    console.error("Slash Register Error:", err);
+  }
+})();
+
 /* =========================
    MESSAGE COMMAND (order)
 ========================= */
 client.on("messageCreate", async (message) => {
   try {
     if (message.author.bot || !message.guild) return;
-
-    if (message.content.toLowerCase() !== "order") return;
     if (message.channel.id !== OPEN_ORDER_CHANNEL_ID) return;
+    if (message.content.toLowerCase() !== "order") return;
 
     const embed = new EmbedBuilder()
       .setColor(0x2b2d31)
       .setTitle("📦 Create Order")
       .setDescription(
-        `**لإنشاء طلب جديد اضغط على الزر بالأسفل 👇**\n\n` +
-        `<@&1471915317373698211>`
+        `**لإنشاء طلب جديد اضغط على الزر بالأسفل 👇**\n\n<@&${MEMBER_ROLE_ID}>`
       );
 
     const row = new ActionRowBuilder().addComponents(
@@ -66,9 +108,7 @@ client.on("messageCreate", async (message) => {
     await message.channel.send({
       embeds: [embed],
       components: [row],
-      allowedMentions: {
-        roles: ["1471915317373698211"]
-      }
+      allowedMentions: { roles: [MEMBER_ROLE_ID] }
     });
 
   } catch (err) {
@@ -82,11 +122,19 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   try {
 
-    /* ===== Open Order Button ===== */
+    /* ===== SLASH COMMANDS ===== */
+    if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
+      await command.execute(interaction);
+      return;
+    }
+
+    /* ===== BUTTONS ===== */
     if (interaction.isButton()) {
 
+      /* Open Order */
       if (interaction.customId === "open_order") {
-
         const modal = new ModalBuilder()
           .setCustomId("order_modal")
           .setTitle("📦 تفاصيل الطلب");
@@ -104,26 +152,22 @@ client.on("interactionCreate", async (interaction) => {
         return interaction.showModal(modal);
       }
 
-      /* ===== Delete Order ===== */
-      if (interaction.customId.startsWith("delete_order_")) {
+      /* Delete Order (Developer Only) */
+      if (interaction.customId === "delete_order") {
 
-        const ownerId = interaction.customId.split("_")[2];
-
-        if (
-          interaction.user.id !== ownerId &&
-          !interaction.member.roles.cache.has(DEVELOPER_ROLE_ID)
-        ) {
+        if (!interaction.member.roles.cache.has(DEVELOPER_ROLE_ID)) {
           return interaction.reply({
-            content: "❌ لا تملك صلاحية حذف هذا الطلب",
+            content: "❌ هذا الزر مخصص للإدارة فقط",
             ephemeral: true
           });
         }
 
         await interaction.message.delete().catch(() => {});
+        return;
       }
     }
 
-    /* ===== Order Modal Submit ===== */
+    /* ===== MODAL SUBMIT ===== */
     if (interaction.isModalSubmit()) {
 
       if (interaction.customId === "order_modal") {
@@ -146,7 +190,7 @@ client.on("interactionCreate", async (interaction) => {
 
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
-            .setCustomId(`delete_order_${interaction.user.id}`)
+            .setCustomId("delete_order")
             .setLabel("𝗗𝗘𝗟𝗘𝗧𝗘")
             .setStyle(ButtonStyle.Danger)
         );
