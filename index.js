@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("./database/mongo")();
 
 const {
   Client,
@@ -15,18 +16,18 @@ const {
   ButtonStyle
 } = require("discord.js");
 
+const fs = require("fs");
+const path = require("path");
+
 /* =========================
    CONFIG
 ========================= */
 const token = process.env.TOKEN;
 
-// روم فتح الطلب
+// ORDER SYSTEM
 const OPEN_ORDER_CHANNEL_ID = "1472297285646811358";
-// روم عرض الطلبات
 const ORDERS_CHANNEL_ID = "1472297493776826481";
-// رول Developer
 const DEVELOPER_ROLE_ID = "1471915084249829572";
-// رول المنشن فوق زر ORDER
 const MEMBER_ROLE_ID = "1471915317373698211";
 
 /* =========================
@@ -45,16 +46,12 @@ client.commands = new Collection();
 /* =========================
    LOAD SLASH COMMANDS
 ========================= */
-const fs = require("fs");
-const path = require("path");
-
 const commandsPath = path.join(__dirname, "commands");
 const commandsArray = [];
 
 if (fs.existsSync(commandsPath)) {
   for (const folder of fs.readdirSync(commandsPath)) {
     const folderPath = path.join(commandsPath, folder);
-
     for (const file of fs.readdirSync(folderPath)) {
       const command = require(path.join(folderPath, file));
       client.commands.set(command.data.name, command);
@@ -85,35 +82,30 @@ const rest = new REST({ version: "10" }).setToken(token);
    MESSAGE COMMAND (order)
 ========================= */
 client.on("messageCreate", async (message) => {
-  try {
-    if (message.author.bot || !message.guild) return;
-    if (message.channel.id !== OPEN_ORDER_CHANNEL_ID) return;
-    if (message.content.toLowerCase() !== "order") return;
+  if (message.author.bot) return;
+  if (message.content.toLowerCase() !== "order") return;
+  if (message.channel.id !== OPEN_ORDER_CHANNEL_ID) return;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x2b2d31)
-      .setTitle("📦 Create Order")
-      .setDescription(
-        `**لإنشاء طلب جديد اضغط على الزر بالأسفل 👇**\n\n<@&${MEMBER_ROLE_ID}>`
-      );
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("open_order")
-        .setLabel("𝗢𝗥𝗗𝗘𝗥")
-        .setStyle(ButtonStyle.Primary)
+  const embed = new EmbedBuilder()
+    .setColor(0x2b2d31)
+    .setTitle("📦 Create Order")
+    .setDescription(
+      `**لإنشاء طلب جديد اضغط على الزر بالأسفل 👇**\n\n<@&${MEMBER_ROLE_ID}>`
     );
 
-    await message.delete().catch(() => {});
-    await message.channel.send({
-      embeds: [embed],
-      components: [row],
-      allowedMentions: { roles: [MEMBER_ROLE_ID] }
-    });
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("open_order")
+      .setLabel("𝗢𝗥𝗗𝗘𝗥")
+      .setStyle(ButtonStyle.Primary)
+  );
 
-  } catch (err) {
-    console.error("ORDER MESSAGE ERROR:", err);
-  }
+  await message.delete().catch(() => {});
+  await message.channel.send({
+    embeds: [embed],
+    components: [row],
+    allowedMentions: { roles: [MEMBER_ROLE_ID] }
+  });
 });
 
 /* =========================
@@ -126,14 +118,13 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
-      await command.execute(interaction);
-      return;
+      return command.execute(interaction);
     }
 
     /* ===== BUTTONS ===== */
     if (interaction.isButton()) {
 
-      /* Open Order */
+      // OPEN ORDER
       if (interaction.customId === "open_order") {
         const modal = new ModalBuilder()
           .setCustomId("order_modal")
@@ -152,24 +143,24 @@ client.on("interactionCreate", async (interaction) => {
         return interaction.showModal(modal);
       }
 
-      /* Delete Order (Developer Only) */
-      if (interaction.customId === "delete_order") {
+      // DELETE ORDER (Developer فقط)
+      if (interaction.customId.startsWith("delete_order_")) {
 
         if (!interaction.member.roles.cache.has(DEVELOPER_ROLE_ID)) {
           return interaction.reply({
-            content: "❌ هذا الزر مخصص للإدارة فقط",
+            content: "❌ الحذف مسموح للـ Developer فقط",
             ephemeral: true
           });
         }
 
         await interaction.message.delete().catch(() => {});
-        return;
       }
     }
 
-    /* ===== MODAL SUBMIT ===== */
+    /* ===== MODALS ===== */
     if (interaction.isModalSubmit()) {
 
+      // ORDER MODAL
       if (interaction.customId === "order_modal") {
 
         const orderText =
@@ -185,12 +176,11 @@ client.on("interactionCreate", async (interaction) => {
             `👤 **صاحب الطلب:** ${interaction.user}\n` +
             `💻 **Developer:** <@&${DEVELOPER_ROLE_ID}>\n\n` +
             `📝 **تفاصيل الطلب:**\n${orderText}`
-          )
-          .setTimestamp();
+          );
 
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
-            .setCustomId("delete_order")
+            .setCustomId(`delete_order_${interaction.user.id}`)
             .setLabel("𝗗𝗘𝗟𝗘𝗧𝗘")
             .setStyle(ButtonStyle.Danger)
         );
