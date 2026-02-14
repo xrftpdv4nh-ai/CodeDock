@@ -1,3 +1,4 @@
+// handlers/encrypt.js
 const {
   ModalBuilder,
   TextInputBuilder,
@@ -10,8 +11,7 @@ const obfuscateArabic = require("../utils/obfuscateArabic");
 module.exports = (client) => {
   client.on("interactionCreate", async (interaction) => {
     try {
-
-      /* ===== زر التشفير ===== */
+      // زر التشفير
       if (interaction.isButton() && interaction.customId === "encrypt_post") {
         const modal = new ModalBuilder()
           .setCustomId("encrypt_modal")
@@ -30,26 +30,22 @@ module.exports = (client) => {
         return interaction.showModal(modal);
       }
 
-      /* ===== مودال التشفير ===== */
-      /* === Encrypt Modal (Only See) === */
-if (interaction.customId === "encrypt_modal") {
+      // استقبال المودال
+      if (interaction.isModalSubmit() && interaction.customId === "encrypt_modal") {
+        const originalText =
+          interaction.fields.getTextInputValue("encrypt_text");
 
-  const obfuscateArabic = require("./utils/obfuscateArabic");
+        const encryptedText = obfuscateArabic(originalText);
 
-  const originalText =
-    interaction.fields.getTextInputValue("encrypt_text");
-
-  const encryptedText = obfuscateArabic(originalText);
-
-  await interaction.reply({
-    content:
-      `🔐 **النص المشفّر:**\n\n${encryptedText}\n\n📋 يمكنك نسخه الآن`,
-    ephemeral: true
-  });
-}
+        return interaction.reply({
+          content:
+            `🔐 **النص المشفّر:**\n\n${encryptedText}\n\n📋 يمكنك نسخه الآن`,
+          ephemeral: true
+        });
+      }
 
     } catch (err) {
-      console.error("ENCRYPT ERROR:", err);
+      console.error("ENCRYPT HANDLER ERROR:", err);
       if (!interaction.replied) {
         interaction.reply({
           content: "❌ حصل خطأ غير متوقع",
