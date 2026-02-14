@@ -31,17 +31,22 @@ module.exports = (client) => {
       }
 
       /* ===== مودال التشفير ===== */
-      if (interaction.isModalSubmit() && interaction.customId === "encrypt_modal") {
-        const originalText =
-          interaction.fields.getTextInputValue("encrypt_text");
+      /* === Encrypt Modal (Only See) === */
+if (interaction.customId === "encrypt_modal") {
 
-        const encryptedText = obfuscateArabic(originalText);
+  const obfuscateArabic = require("./utils/obfuscateArabic");
 
-        return interaction.reply({
-          content: `🔐 **النص المشفّر:**\n\n${encryptedText}\n\n📋 يمكنك نسخه الآن`,
-          ephemeral: true
-        });
-      }
+  const originalText =
+    interaction.fields.getTextInputValue("encrypt_text");
+
+  const encryptedText = obfuscateArabic(originalText);
+
+  await interaction.reply({
+    content:
+      `🔐 **النص المشفّر:**\n\n${encryptedText}\n\n📋 يمكنك نسخه الآن`,
+    ephemeral: true
+  });
+}
 
     } catch (err) {
       console.error("ENCRYPT ERROR:", err);
