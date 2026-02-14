@@ -5,12 +5,30 @@ const {
   Client,
   GatewayIntentBits,
   Collection,
+  REST,
+  Routes,
   EmbedBuilder
 } = require("discord.js");
 
 const fs = require("fs");
 const path = require("path");
 
+/* =========================
+   CONFIG
+========================= */
+const TOKEN = process.env.TOKEN;
+
+// Publish System
+const ALLOWED_PUBLISH_CHANNELS = [
+  "1471922711860089054",
+  "1471922345387233475"
+];
+const PUBLISH_CHANNEL_ID = "1471923136806260991";
+const DEV_ROLE_ID = "1471915084249829572";
+
+/* =========================
+   CLIENT
+========================= */
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -44,15 +62,15 @@ if (fs.existsSync(commandsPath)) {
 /* =========================
    REGISTER SLASH COMMANDS
 ========================= */
-const { REST, Routes } = require("discord.js");
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" }).setToken(TOKEN);
 
 (async () => {
   try {
     const app = await rest.get(Routes.oauth2CurrentApplication());
-    await rest.put(Routes.applicationCommands(app.id), {
-      body: commandsArray
-    });
+    await rest.put(
+      Routes.applicationCommands(app.id),
+      { body: commandsArray }
+    );
     console.log("✅ Slash Commands Registered");
   } catch (err) {
     console.error("Slash Register Error:", err);
@@ -60,15 +78,28 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 })();
 
 /* =========================
-   INTERACTION HANDLER (الأساسي)
+   INTERACTIONS
 ========================= */
 client.on("interactionCreate", async (interaction) => {
   try {
 
     /* ========= SLASH COMMANDS ========= */
     if (interaction.isChatInputCommand()) {
+
+      // 🔒 تقييد /publish بالرومات
+      if (
+        interaction.commandName === "publish" &&
+        !ALLOWED_PUBLISH_CHANNELS.includes(interaction.channelId)
+      ) {
+        return interaction.reply({
+          content: "❌ الأمر ده مسموح في رومات النشر فقط.",
+          ephemeral: true
+        });
+      }
+
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
+
       return await command.execute(interaction);
     }
 
@@ -82,7 +113,8 @@ client.on("interactionCreate", async (interaction) => {
         const lang = interaction.fields.getTextInputValue("lang");
         const code = interaction.fields.getTextInputValue("code");
 
-        const DEV_ROLE_ID = "1471915084249829572"; // رول الديف
+        const publishChannel =
+          await interaction.guild.channels.fetch(PUBLISH_CHANNEL_ID);
 
         const embed = new EmbedBuilder()
           .setColor("#5865F2")
@@ -94,7 +126,7 @@ client.on("interactionCreate", async (interaction) => {
           )
           .setTimestamp();
 
-        await interaction.channel.send({
+        await publishChannel.send({
           embeds: [embed],
           allowedMentions: { roles: [DEV_ROLE_ID] }
         });
@@ -104,11 +136,11 @@ client.on("interactionCreate", async (interaction) => {
           ephemeral: true
         });
       }
+
     }
 
   } catch (err) {
     console.error("Interaction Error:", err);
-
     if (!interaction.replied) {
       interaction.reply({
         content: "❌ حصل خطأ غير متوقع",
@@ -119,7 +151,7 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 /* =========================
-   HANDLERS (Text / Order / Shop)
+   HANDLERS (بدون برفكس)
 ========================= */
 require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
@@ -132,4 +164,4 @@ client.once("ready", () => {
   console.log("🚀 CodeDock Bot is online");
 });
 
-client.login(process.env.TOKEN);
+client.login(TOKEN);
