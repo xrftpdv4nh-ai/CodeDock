@@ -248,6 +248,7 @@ client.on("guildMemberAdd", async (member) => {
 require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
 require("./handlers/order")(client);
+require("./handlers/roleSale")(client);
 
 /* =========================
    READY
