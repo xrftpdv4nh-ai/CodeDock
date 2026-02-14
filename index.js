@@ -47,6 +47,14 @@ client.on("messageCreate", async (message) => {
     if (message.content.toLowerCase() !== "order") return;
     if (message.channel.id !== OPEN_ORDER_CHANNEL_ID) return;
 
+    const embed = new EmbedBuilder()
+      .setColor(0x2b2d31)
+      .setTitle("📦 Create Order")
+      .setDescription(
+        `لإنشاء طلب جديد اضغط على الزر بالأسفل 👇\n\n` +
+        `<@&1471915317373698211>`
+      );
+
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("open_order")
@@ -56,8 +64,11 @@ client.on("messageCreate", async (message) => {
 
     await message.delete().catch(() => {});
     await message.channel.send({
-      content: `${message.author}`,
-      components: [row]
+      embeds: [embed],
+      components: [row],
+      allowedMentions: {
+        roles: ["1471915317373698211"]
+      }
     });
 
   } catch (err) {
