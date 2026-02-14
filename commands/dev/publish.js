@@ -3,11 +3,8 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  ActionRowBuilder,
-  EmbedBuilder
+  ActionRowBuilder
 } = require("discord.js");
-
-const { devRoleId } = require("../../config");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -44,29 +41,6 @@ module.exports = {
       )
     );
 
-    if (interaction.isChatInputCommand())
-      return interaction.showModal(modal);
-
-    if (interaction.isModalSubmit()) {
-      const title = interaction.fields.getTextInputValue("title");
-      const lang = interaction.fields.getTextInputValue("lang");
-      const code = interaction.fields.getTextInputValue("code");
-
-      const embed = new EmbedBuilder()
-        .setColor("#5865F2")
-        .setTitle(`📦 ${title}`)
-        .setDescription(
-          `\`\`\`${lang}\n${code}\n\`\`\`\n` +
-          `👨‍💻 **Published by:** ${interaction.user}\n` +
-          `📢 <@&${devRoleId}>\n` +
-          `🔹 **${interaction.guild.name}**`
-        )
-        .setTimestamp();
-
-      await interaction.reply({
-        embeds: [embed],
-        allowedMentions: { roles: [devRoleId] }
-      });
-    }
+    await interaction.showModal(modal);
   }
 };
