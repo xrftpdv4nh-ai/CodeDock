@@ -5,7 +5,7 @@ const {
   TextInputStyle,
   ActionRowBuilder
 } = require("discord.js");
-const hasAdminAccess = require("../../../utils/permissions");
+const hasAdminAccess = require("../../utils/permissions");
 
 module.exports = {
   data: new SlashCommandBuilder()
