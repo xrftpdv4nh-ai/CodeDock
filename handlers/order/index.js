@@ -11,13 +11,11 @@ const {
 const OPEN_ORDER_CHANNEL_ID = "1472297285646811358";
 const ORDERS_CHANNEL_ID = "1472297493776826481";
 const DEVELOPER_ROLE_ID = "1471915084249829572";
-const MEMBERS_ROLE_ID = "1471915317373698211";
+const MEMBER_ROLE_ID = "1471915317373698211";
 
 module.exports = (client) => {
 
-  /* =========================
-     MESSAGE COMMAND: order
-  ========================= */
+  /* ===== order message ===== */
   client.on("messageCreate", async (message) => {
     if (message.author.bot || !message.guild) return;
     if (message.channel.id !== OPEN_ORDER_CHANNEL_ID) return;
@@ -28,7 +26,7 @@ module.exports = (client) => {
       .setTitle("📦 Create Order")
       .setDescription(
         "اضغط على الزر بالأسفل لإنشاء طلب جديد 👇\n\n" +
-        `<@&${MEMBERS_ROLE_ID}>`
+        `<@&${MEMBER_ROLE_ID}>`
       );
 
     const row = new ActionRowBuilder().addComponents(
@@ -42,18 +40,15 @@ module.exports = (client) => {
     await message.channel.send({
       embeds: [embed],
       components: [row],
-      allowedMentions: { roles: [MEMBERS_ROLE_ID] }
+      allowedMentions: { roles: [MEMBER_ROLE_ID] }
     });
   });
 
-  /* =========================
-     INTERACTIONS
-  ========================= */
+  /* ===== interactions ===== */
   client.on("interactionCreate", async (interaction) => {
 
-    /* ===== Open Order Button ===== */
+    /* open modal */
     if (interaction.isButton() && interaction.customId === "open_order") {
-
       const modal = new ModalBuilder()
         .setCustomId("order_modal")
         .setTitle("📦 تفاصيل الطلب");
@@ -71,7 +66,7 @@ module.exports = (client) => {
       return interaction.showModal(modal);
     }
 
-    /* ===== Submit Order ===== */
+    /* submit order */
     if (interaction.isModalSubmit() && interaction.customId === "order_modal") {
 
       const text = interaction.fields.getTextInputValue("order_text");
@@ -88,7 +83,7 @@ module.exports = (client) => {
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`delete_order_${interaction.user.id}`)
+          .setCustomId("delete_order")
           .setLabel("𝗗𝗘𝗟𝗘𝗧𝗘")
           .setStyle(ButtonStyle.Danger)
       );
@@ -109,12 +104,11 @@ module.exports = (client) => {
       });
     }
 
-    /* ===== Delete Order ===== */
-    if (interaction.isButton() && interaction.customId.startsWith("delete_order_")) {
-
+    /* delete (developer only) */
+    if (interaction.isButton() && interaction.customId === "delete_order") {
       if (!interaction.member.roles.cache.has(DEVELOPER_ROLE_ID)) {
         return interaction.reply({
-          content: "❌ هذا الزر مخصص لفريق التطوير فقط",
+          content: "❌ الحذف مخصص لفريق التطوير فقط",
           ephemeral: true
         });
       }
