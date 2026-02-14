@@ -306,7 +306,7 @@ require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
 require("./handlers/order")(client);
 require("./handlers/roleSale")(client);
-
+require("./handlers/encrypt")(client); // لو عندك handler للتشفير
 /* =========================
    READY
 ========================= */
