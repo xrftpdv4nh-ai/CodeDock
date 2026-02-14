@@ -8,13 +8,11 @@ const {
 const obfuscateArabic = require("../utils/obfuscateArabic");
 
 module.exports = (client) => {
-
   client.on("interactionCreate", async (interaction) => {
+    try {
 
-    // زر فتح المودال
-    if (interaction.isButton()) {
-      if (interaction.customId === "encrypt_post") {
-
+      /* ===== زر التشفير ===== */
+      if (interaction.isButton() && interaction.customId === "encrypt_post") {
         const modal = new ModalBuilder()
           .setCustomId("encrypt_modal")
           .setTitle("🔐 تشفير منشورك");
@@ -31,26 +29,28 @@ module.exports = (client) => {
 
         return interaction.showModal(modal);
       }
+
+      /* ===== مودال التشفير ===== */
+      if (interaction.isModalSubmit() && interaction.customId === "encrypt_modal") {
+        const originalText =
+          interaction.fields.getTextInputValue("encrypt_text");
+
+        const encryptedText = obfuscateArabic(originalText);
+
+        return interaction.reply({
+          content: `🔐 **النص المشفّر:**\n\n${encryptedText}\n\n📋 يمكنك نسخه الآن`,
+          ephemeral: true
+        });
+      }
+
+    } catch (err) {
+      console.error("ENCRYPT ERROR:", err);
+      if (!interaction.replied) {
+        interaction.reply({
+          content: "❌ حصل خطأ غير متوقع",
+          ephemeral: true
+        }).catch(() => {});
+      }
     }
-
-    // استقبال المودال
-    if (interaction.isModalSubmit()) {
-      if (interaction.customId !== "encrypt_modal") return;
-
-      const originalText =
-        interaction.fields.getTextInputValue("encrypt_text");
-
-      const encryptedText = obfuscateArabic(originalText);
-
-      await interaction.reply({
-        content:
-          `🔐 **النص المموّه:**\n\n` +
-          `**${encryptedText}**\n\n` +
-          `📋 يمكنك نسخه الآن`,
-        ephemeral: true
-      });
-    }
-
   });
-
 };
