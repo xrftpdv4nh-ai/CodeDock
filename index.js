@@ -113,100 +113,56 @@ client.on("interactionCreate", async (interaction) => {
     /* ========= MODALS ========= */
     if (interaction.isModalSubmit()) {
 
-      /* 🔹 Publish Modal */
-      if (interaction.customId === "publish_modal") {
-        const title = interaction.fields.getTextInputValue("title");
-        const lang = interaction.fields.getTextInputValue("lang");
-        const code = interaction.fields.getTextInputValue("code");
+      /* 🔹 Publish Modal */if (interaction.customId === "embed_modal") {
 
-        const embed = new EmbedBuilder()
-          .setColor("#2f3136")
-          .setTitle(`📦 ${title}`)
-          .setDescription(
-            `\`\`\`${lang}\n${code}\n\`\`\`\n` +
-            `👨‍💻 **Published by:** ${interaction.user}\n` +
-            `📢 <@&${MEMBERS_ROLE_ID}>`
-          );
+  const title = interaction.fields.getTextInputValue("embed_title");
+  const desc = interaction.fields.getTextInputValue("embed_desc");
+  const image = interaction.fields.getTextInputValue("embed_image");
+  let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
 
-        const publishChannel = await client.channels.fetch(PUBLISH_CHANNEL_ID);
+  mention = mention.toLowerCase();
 
-        await publishChannel.send({
-          embeds: [embed],
-          allowedMentions: { roles: [MEMBERS_ROLE_ID] }
-        });
+  let mentionText = "";
+  let allowedMentions = { parse: [] };
 
-        return interaction.reply({
-          content: "✅ تم نشر الكود بنجاح.",
-          ephemeral: true
-        });
-      }
+  if (mention === "here") {
+    mentionText = "@here";
+    allowedMentions.parse = ["everyone"];
+  } else if (mention === "everyone") {
+    mentionText = "@everyone";
+    allowedMentions.parse = ["everyone"];
+  } else if (/^\d+$/.test(mention)) {
+    mentionText = `<@&${mention}>`;
+    allowedMentions = { roles: [mention] };
+  }
 
-      /* 🔹 Post Ad Modal */
-      if (interaction.customId === "post_ad_modal") {
-        const script = interaction.fields.getTextInputValue("ad_script");
-        let mention = interaction.fields.getTextInputValue("ad_mention") || "none";
-        mention = mention.toLowerCase();
+  let finalDescription = "";
 
-        let mentionText = "";
-        if (mention === "here") mentionText = "@here";
-        if (mention === "everyone") mentionText = "@everyone";
+  if (desc) {
+    finalDescription += `**${desc}**\n\n`;
+  }
 
-        await interaction.channel.send({
-          content: `${mentionText}\n${script}`,
-          allowedMentions: {
-            parse: mention === "none" ? [] : ["everyone"]
-          }
-        });
+  if (mentionText) {
+    finalDescription += mentionText;
+  }
 
-        return interaction.reply({
-          content: "✅ تم نشر الإعلان بنجاح",
-          ephemeral: true
-        });
-      }
+  const embed = new EmbedBuilder()
+    .setColor(0x2b2d31);
 
-      /* 🔹 Embed Modal */
-      if (interaction.customId === "embed_modal") {
+  if (title) embed.setTitle(`**__${title}__**`);
+  if (finalDescription) embed.setDescription(finalDescription);
+  if (image && image.startsWith("http")) embed.setImage(image);
 
-        const title = interaction.fields.getTextInputValue("embed_title");
-        const desc = interaction.fields.getTextInputValue("embed_desc");
-        const image = interaction.fields.getTextInputValue("embed_image");
-        let mention = interaction.fields.getTextInputValue("embed_mention") || "none";
-        mention = mention.toLowerCase();
+  await interaction.channel.send({
+    embeds: [embed],
+    allowedMentions
+  });
 
-        let mentionText = "";
-        let allowedMentions = { parse: [] };
-
-        if (mention === "here") {
-          mentionText = "@here";
-          allowedMentions.parse = ["everyone"];
-        } else if (mention === "everyone") {
-          mentionText = "@everyone";
-          allowedMentions.parse = ["everyone"];
-        } else if (/^\d+$/.test(mention)) {
-          mentionText = `<@&${mention}>`;
-          allowedMentions = { roles: [mention] };
-        }
-
-        const embed = new EmbedBuilder().setColor(0x2b2d31);
-
-        if (title) embed.setTitle(`**__${title}__**`);
-        if (desc) embed.setDescription(`**${desc}**`);
-        if (image && image.startsWith("http")) embed.setImage(image);
-
-        if (mentionText) {
-          embed.setFooter({ text: mentionText });
-        }
-
-        await interaction.channel.send({
-          embeds: [embed],
-          allowedMentions
-        });
-
-        return interaction.reply({
-          content: "✅ تم إرسال الـ Embed بنجاح",
-          ephemeral: true
-        });
-      }
+  return interaction.reply({
+    content: "✅ تم إرسال الـ Embed بنجاح",
+    ephemeral: true
+  });
+}
     }
 
   } catch (err) {
