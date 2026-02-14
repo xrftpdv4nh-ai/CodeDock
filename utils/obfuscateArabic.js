@@ -1,41 +1,31 @@
-// utils/obfuscateArabic.js
+/**
+ * Arabic Smart Obfuscation
+ * Visual encryption for ads (human-readable)
+ * By CodeDock
+ */
 
-const map = {
-  "ا": "ـ9",
-  "أ": "ـ9",
-  "إ": "ـ9",
-  "ب": "ـ9",
-  "ت": "ـ9",
-  "ث": "ـ9",
-  "ج": "ـج",
-  "ح": "ـح",
-  "خ": "خـ1",
-  "د": "د",
-  "ذ": "ذ",
-  "ر": "ر",
-  "ز": "ز",
-  "س": "سـ3ـ",
-  "ش": "شـ&ـ",
-  "ص": "ص",
-  "ض": "ض",
-  "ط": "ط",
-  "ظ": "ظ",
-  "ع": "ع",
-  "غ": "غ",
-  "ف": "ف",
-  "ق": "ق",
-  "ك": "ك",
-  "ل": "ل",
-  "م": "م",
-  "ن": "ن",
-  "ه": "هـ",
-  "و": "و",
-  "ي": "ي",
-};
+module.exports = function obfuscateArabic(text) {
+  if (!text || typeof text !== "string") return "";
 
-module.exports = function obfuscateArabic(text = "") {
   return text
-    .split("")
-    .map(char => map[char] || char)
-    .join("");
+    // ب / و
+    .replace(/ب/g, "بـ9")
+    .replace(/و/g, "ـ9و")
+
+    // ت
+    .replace(/ت/g, "ـ9ت")
+
+    // س
+    .replace(/س/g, "ـ3")
+
+    // ش
+    .replace(/ش/g, "ـ&")
+
+    // خ
+    .replace(/خ/g, "ـ1")
+
+    // تنظيف التكرار
+    .replace(/ـ9ـ9/g, "ـ9")
+    .replace(/ـ3ـ3/g, "ـ3")
+    .replace(/ـ&ـ&/g, "ـ&");
 };
