@@ -5,4 +5,5 @@ module.exports = (client) => {
   require("./renewShop")(client);
   require("./warnshop")(client);
   require("./unwarnshop")(client);
+  require("./callshop")(client);
 };
