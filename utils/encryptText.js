@@ -2,14 +2,13 @@
 
 const map = {
   "و": "ـ9",
-  "س": "سـ3",
-  "ش": "شـ&",
-  "خ": "خـ1",
-  "ز": "z",
-  "ل": "لـ9",
-  "ر": "ـ9ر",
-  "ك": "كـ9",
-  "د": "د",
+  "س": "ـs",
+  "ش": "ـ&",
+  "خ": "ـ1",
+  "ز": "ـz",
+  "ل": "ـL",
+  "ك": "ـ9",
+  "ر": "ـ9"
 };
 
 module.exports = function encryptText(text) {
@@ -22,9 +21,11 @@ module.exports = function encryptText(text) {
 
       for (let i = 0; i < chars.length; i++) {
         const ch = chars[i];
+
         if (map[ch]) {
-          chars[i] = map[ch];
-          break; // يشفر حرف واحد فقط في الكلمة
+          // نسيب الحرف ونضيف التشويش بعده
+          chars[i] = ch + map[ch];
+          break; // نشفر حرف واحد فقط
         }
       }
 
