@@ -4,6 +4,24 @@ module.exports = {
   name: "interactionCreate",
   async execute(interaction) {
 
+    if (interaction.isButton() && interaction.customId === "encrypt_btn") {
+  const modal = new ModalBuilder()
+    .setCustomId("encrypt_modal")
+    .setTitle("🔐 تشفير الإعلان");
+
+  const input = new TextInputBuilder()
+    .setCustomId("post_text")
+    .setLabel("اكتب الإعلان")
+    .setStyle(TextInputStyle.Paragraph)
+    .setRequired(true);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(input)
+  );
+
+  await interaction.showModal(modal);
+}
+    
     /* =========================
        2️⃣ مودال التشفير
     ========================= */
