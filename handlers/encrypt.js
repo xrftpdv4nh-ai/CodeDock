@@ -36,12 +36,12 @@ module.exports = (client) => {
       const encrypted = encryptText(text);
 
       return interaction.reply({
-        content:
-          "🔐 **النص المشفّر:**\n\n" +
-          encrypted +
-          "\n\n📋 يمكنك نسخه الآن",
-        ephemeral: true
-      });
+  content:
+    "**منشورك بعد التشفير - CodeDock :**\n\n" +
+    `**${encrypted}**\n\n` +
+    "📋 يمكنك نسخه الآن",
+  ephemeral: true
+});
     }
   });
 };
