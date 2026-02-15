@@ -4,16 +4,16 @@ const {
   ChannelType
 } = require("discord.js");
 
-../../../../database/models/EncryptConfig
+const EncryptConfig = require("../../../database/models/EncryptConfig");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("set-encrypt")
-    .setDescription("تفعيل التشفير في روم")
+    .setDescription("تحديد رومات التشفير")
     .addChannelOption(option =>
       option
         .setName("channel")
-        .setDescription("الروم")
+        .setDescription("الروم اللي يتفعل فيها التشفير")
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true)
     )
@@ -27,21 +27,21 @@ module.exports = {
     });
 
     if (!config) {
-      config = await EncryptConfig.create({
+      config = new EncryptConfig({
         guildId: interaction.guild.id,
-        channels: [channel.id]
+        channels: []
       });
-    } else {
-      if (config.channels.includes(channel.id)) {
-        return interaction.reply({
-          content: "⚠️ التشفير مفعل بالفعل في هذا الروم",
-          ephemeral: true
-        });
-      }
-
-      config.channels.push(channel.id);
-      await config.save();
     }
+
+    if (config.channels.includes(channel.id)) {
+      return interaction.reply({
+        content: "⚠️ الروم دي مضافة بالفعل",
+        ephemeral: true
+      });
+    }
+
+    config.channels.push(channel.id);
+    await config.save();
 
     await interaction.reply({
       content: `✅ تم تفعيل التشفير في ${channel}`,
