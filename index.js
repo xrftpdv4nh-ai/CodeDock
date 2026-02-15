@@ -6,7 +6,11 @@ const {
   GatewayIntentBits,
   Collection,
   REST,
-  Routes
+  Routes,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
 } = require("discord.js");
 
 const fs = require("fs");
@@ -87,33 +91,66 @@ const rest = new REST({ version: "10" }).setToken(token);
 })();
 
 /* =========================
-   INTERACTIONS (Slash فقط)
+   INTERACTIONS
 ========================= */
 client.on("interactionCreate", async (interaction) => {
   try {
-    if (!interaction.isChatInputCommand()) return;
+    /* ===== Slash Commands ===== */
+    if (interaction.isChatInputCommand()) {
 
-    // قيود publish
-    if (interaction.commandName === "publish") {
-      if (!PUBLISH_ALLOWED_CHANNELS.includes(interaction.channelId)) {
-        return interaction.reply({
-          content: "❌ الأمر ده مسموح في رومات محددة فقط",
-          ephemeral: true
-        });
+      // قيود publish
+      if (interaction.commandName === "publish") {
+        if (!PUBLISH_ALLOWED_CHANNELS.includes(interaction.channelId)) {
+          return interaction.reply({
+            content: "❌ الأمر ده مسموح في رومات محددة فقط",
+            ephemeral: true
+          });
+        }
+
+        if (!interaction.member.roles.cache.has(DEV_ROLE_ID)) {
+          return interaction.reply({
+            content: "❌ الأمر ده للـ Developers فقط",
+            ephemeral: true
+          });
+        }
       }
 
-      if (!interaction.member.roles.cache.has(DEV_ROLE_ID)) {
-        return interaction.reply({
-          content: "❌ الأمر ده للـ Developers فقط",
-          ephemeral: true
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
+
+      await command.execute(interaction);
+
+      /* ===== دعم set-encrypt (إرسال الإيمبيد + الزرار) ===== */
+      if (interaction.commandName === "set-encrypt") {
+        const channel =
+          interaction.options.getChannel("channel");
+
+        if (!channel || !channel.isTextBased()) return;
+
+        const embed = new EmbedBuilder()
+          .setTitle("🔐 Obscura • تشفير منشورك")
+          .setDescription(
+            "▸ لتشفير منشورك بطريقة ذكية وآمنة\n" +
+            "▸ اضغط على الزر بالأسفل\n" +
+            "▸ اكتب إعلانك وسيتم تشفيره تلقائيًا\n\n" +
+            "▸ لن يتم نشر أي شيء تلقائيًا\n" +
+            "▸ 📋 ستحصل على النص المشفّر للنسخ فقط"
+          )
+          .setColor(0x2b2d31);
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId("encrypt_post")
+            .setLabel("تشفير منشورك")
+            .setStyle(ButtonStyle.Secondary)
+        );
+
+        await channel.send({
+          embeds: [embed],
+          components: [row]
         });
       }
     }
-
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
-
-    await command.execute(interaction);
 
   } catch (err) {
     console.error("Interaction Error:", err);
@@ -150,7 +187,7 @@ require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
 require("./handlers/order")(client);
 require("./handlers/roleSale")(client);
-require("./handlers/encrypt")(client); // 🔐 التشفير هنا فقط
+require("./handlers/encrypt")(client); // 🔐 التشفير
 
 /* =========================
    READY
