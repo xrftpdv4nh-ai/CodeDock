@@ -4,34 +4,53 @@ module.exports = function encryptText(text) {
   if (!text || typeof text !== "string") return text;
 
   return text
-    .split("")
-    .map(char => {
-      switch (char) {
+    .split(" ")
+    .map(word => {
+      const chars = word.split("");
+      const len = chars.length;
 
-        // === القواعد الأساسية ===
-        case "و":
-          return "9";
+      return chars
+        .map((char, index) => {
 
-        case "ت":
-          return "تـ";
+          const isFirst = index === 0;
+          const isLast = index === len - 1;
+          const isMiddle = !isFirst && !isLast;
 
-        // === حروف إضافية (اختياري – نفس ستايلك) ===
-        case "س":
-          return "سـ3";
+          // ===== و =====
+          if (char === "و") {
+            return "9";
+          }
 
-        case "ش":
-          return "شـ&";
+          // ===== ت =====
+          // وسط الكلمة → تـ
+          // آخر الكلمة أو لوحدها → ت
+          if (char === "ت") {
+            if (isMiddle) return "تـ";
+            return "ت";
+          }
 
-        case "خ":
-          return "خـ1";
+          // ===== س =====
+          // أول الكلمة → سـ
+          // آخر الكلمة → س
+          if (char === "س") {
+            if (isFirst) return "سـ";
+            return "س";
+          }
 
-        case "ز":
-          return "z";
+          // ===== ع =====
+          // أول الكلمة → عـ
+          // وسط الكلمة → 3
+          // آخر الكلمة → ع
+          if (char === "ع") {
+            if (isFirst) return "عـ";
+            if (isMiddle) return "3";
+            return "ع";
+          }
 
-        // === باقي الحروف ===
-        default:
+          // ===== باقي الحروف =====
           return char;
-      }
+        })
+        .join("");
     })
-    .join("");
+    .join(" ");
 };
