@@ -1,17 +1,14 @@
 // utils/obfuscateArabic.js
 
 const letterMap = {
-  "ا": "ا",
   "و": "9",
-  "ب": "بـ",
-  "ت": "تـ",
   "س": "سـ3",
   "ش": "شـ&",
   "خ": "خـ1",
   "ز": "z",
   "ل": "لـL",
-  "د": "د",
-  "ن": "نـ"
+  "ب": "بــ",
+  "ت": "تــ"
 };
 
 module.exports = function obfuscateArabic(text) {
@@ -20,12 +17,12 @@ module.exports = function obfuscateArabic(text) {
   return text
     .split(" ")
     .map(word => {
-      let chars = word.split("");
+      const chars = word.split("");
       for (let i = 0; i < chars.length; i++) {
         const ch = chars[i];
         if (letterMap[ch]) {
           chars[i] = letterMap[ch];
-          break; // نشفر حرف واحد بس في الكلمة
+          break; // نشفر أول حرف مناسب فقط
         }
       }
       return chars.join("");
