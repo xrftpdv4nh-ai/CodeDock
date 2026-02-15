@@ -11,9 +11,7 @@ const encryptText = require("../utils/encryptText");
 module.exports = (client) => {
   client.on("interactionCreate", async (interaction) => {
 
-    /* ======================
-       زرار التشفير
-    ====================== */
+    // 🔘 زر التشفير
     if (interaction.isButton() && interaction.customId === "encrypt_post") {
       const modal = new ModalBuilder()
         .setCustomId("encrypt_modal")
@@ -32,14 +30,10 @@ module.exports = (client) => {
       return interaction.showModal(modal);
     }
 
-    /* ======================
-       مودال التشفير
-    ====================== */
+    // 📩 المودال
     if (interaction.isModalSubmit() && interaction.customId === "encrypt_modal") {
-      const originalText =
-        interaction.fields.getTextInputValue("post_text");
-
-      const encrypted = encryptText(originalText);
+      const text = interaction.fields.getTextInputValue("post_text");
+      const encrypted = encryptText(text);
 
       return interaction.reply({
         content:
@@ -49,6 +43,5 @@ module.exports = (client) => {
         ephemeral: true
       });
     }
-
   });
 };
