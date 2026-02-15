@@ -1,35 +1,37 @@
 // utils/encryptText.js
 
-const map = {
-  "و": "ـ9",
-  "س": "ـs",
-  "ش": "ـ&",
-  "خ": "ـ1",
-  "ز": "ـz",
-  "ل": "ـL",
-  "ك": "ـ9",
-  "ر": "ـ9"
-};
-
 module.exports = function encryptText(text) {
   if (!text || typeof text !== "string") return text;
 
   return text
-    .split(" ")
-    .map(word => {
-      let chars = word.split("");
+    .split("")
+    .map(char => {
+      switch (char) {
 
-      for (let i = 0; i < chars.length; i++) {
-        const ch = chars[i];
+        // === القواعد الأساسية ===
+        case "و":
+          return "9";
 
-        if (map[ch]) {
-          // نسيب الحرف ونضيف التشويش بعده
-          chars[i] = ch + map[ch];
-          break; // نشفر حرف واحد فقط
-        }
+        case "ت":
+          return "تـ";
+
+        // === حروف إضافية (اختياري – نفس ستايلك) ===
+        case "س":
+          return "سـ3";
+
+        case "ش":
+          return "شـ&";
+
+        case "خ":
+          return "خـ1";
+
+        case "ز":
+          return "z";
+
+        // === باقي الحروف ===
+        default:
+          return char;
       }
-
-      return chars.join("");
     })
-    .join(" ");
+    .join("");
 };
