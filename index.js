@@ -119,37 +119,7 @@ client.on("interactionCreate", async (interaction) => {
       if (!command) return;
 
       await command.execute(interaction);
-
-      /* ===== دعم set-encrypt (إرسال الإيمبيد + الزرار) ===== */
-      if (interaction.commandName === "set-encrypt") {
-        const channel =
-          interaction.options.getChannel("channel");
-
-        if (!channel || !channel.isTextBased()) return;
-
-        const embed = new EmbedBuilder()
-          .setTitle("🔐 Obscura • تشفير منشورك")
-          .setDescription(
-            "▸ لتشفير منشورك بطريقة ذكية وآمنة\n" +
-            "▸ اضغط على الزر بالأسفل\n" +
-            "▸ اكتب إعلانك وسيتم تشفيره تلقائيًا\n\n" +
-            "▸ لن يتم نشر أي شيء تلقائيًا\n" +
-            "▸ 📋 ستحصل على النص المشفّر للنسخ فقط"
-          )
-          .setColor(0x2b2d31);
-
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId("encrypt_post")
-            .setLabel("تشفير منشورك")
-            .setStyle(ButtonStyle.Secondary)
-        );
-
-        await channel.send({
-          embeds: [embed],
-          components: [row]
-        });
-      }
+      
     }
 
   } catch (err) {
