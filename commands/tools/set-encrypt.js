@@ -22,7 +22,7 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(0x2b2d31)
-      .setTitle("🔐 Obscura • تشفير منشورك")
+      .setTitle("**شفر منشورك · Code||D||ock Encrypt Your Post**")
       .setDescription(
         "▸ لتشفير منشورك بطريقة ذكية وآمنة\n" +
         "▸ اضغط على الزر بالأسفل\n" +
