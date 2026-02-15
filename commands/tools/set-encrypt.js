@@ -1,58 +1,50 @@
 const {
   SlashCommandBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder
+  PermissionFlagsBits,
+  ChannelType
 } = require("discord.js");
-const hasAdminAccess = require("../../utils/permissions");
+
+const EncryptConfig = require("../../../database/models/EncryptConfig");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("set-encrypt")
-    .setDescription("إنشاء لوحة تشفير المنشورات")
-    .addChannelOption(opt =>
-      opt
+    .setDescription("تفعيل التشفير في روم")
+    .addChannelOption(option =>
+      option
         .setName("channel")
-        .setDescription("الروم اللي هيتحط فيه زر التشفير")
+        .setDescription("الروم")
+        .addChannelTypes(ChannelType.GuildText)
         .setRequired(true)
-    ),
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
-    if (!hasAdminAccess(interaction.member)) {
-      return interaction.reply({
-        content: "❌ لا تملك صلاحية استخدام الأمر",
-        ephemeral: true
-      });
-    }
-
     const channel = interaction.options.getChannel("channel");
 
-    const embed = new EmbedBuilder()
-      .setTitle("**🔐 Obscura • تشفير منشورك**")
-      .setDescription(
-        "**▸ لتشفير منشورك بطريقة ذكية وآمنة**\n" +
-        "**▸ اضغط على الزر بالأسفل**\n" +
-        "**▸ اكتب إعلانك وسيتم تشفيره تلقائيًا**\n\n" +
-        "**▸ لن يتم نشر أي شيء تلقائيًا**\n" +
-        "**▸ 📋 ستحصل على النص المشفّر للنسخ فقط**"
-      )
-      .setColor(0x2b2d31);
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("encrypt_post")
-        .setLabel("**تشفير منشورك**")
-        .setStyle(ButtonStyle.Secondary)
-    );
-
-    await channel.send({
-      embeds: [embed],
-      components: [row]
+    let config = await EncryptConfig.findOne({
+      guildId: interaction.guild.id
     });
 
+    if (!config) {
+      config = await EncryptConfig.create({
+        guildId: interaction.guild.id,
+        channels: [channel.id]
+      });
+    } else {
+      if (config.channels.includes(channel.id)) {
+        return interaction.reply({
+          content: "⚠️ التشفير مفعل بالفعل في هذا الروم",
+          ephemeral: true
+        });
+      }
+
+      config.channels.push(channel.id);
+      await config.save();
+    }
+
     await interaction.reply({
-      content: `✅ تم إنشاء لوحة التشفير في ${channel}`,
+      content: `✅ تم تفعيل التشفير في ${channel}`,
       ephemeral: true
     });
   }
