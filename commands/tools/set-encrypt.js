@@ -4,7 +4,7 @@ const {
   ChannelType
 } = require("discord.js");
 
-const EncryptConfig = require("../../../database/models/EncryptConfig");
+../../../../database/models/EncryptConfig
 
 module.exports = {
   data: new SlashCommandBuilder()
