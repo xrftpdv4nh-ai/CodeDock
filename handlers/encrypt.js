@@ -6,8 +6,7 @@ const {
   ActionRowBuilder
 } = require("discord.js");
 
-const obfuscateArabic = require("../utils/obfuscateArabic");
-
+const encryptText = require("../utils/encryptText");
 module.exports = (client) => {
   client.on("interactionCreate", async (interaction) => {
     try {
