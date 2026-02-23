@@ -32,6 +32,14 @@ const MEMBERS_ROLE_ID = "1471915317373698211";
 // Welcome
 const WELCOME_CHANNEL_ID = "1475552205468864664";
 
+// Auto Line
+const AUTO_LINE_CHANNELS = [
+  "1475550126217887896",
+  "1475551570182668338"
+];
+
+const AUTO_LINE_IMAGE = "PUT_IMAGE_LINK_HERE";
+
 /* =========================
    CLIENT
 ========================= */
@@ -94,7 +102,7 @@ client.on("interactionCreate", async (interaction) => {
   try {
 
     /* ======================
-       1️⃣ Slash Commands
+       SLASH COMMANDS
     ====================== */
     if (interaction.isChatInputCommand()) {
 
@@ -121,7 +129,7 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     /* ======================
-       2️⃣ Publish Modal
+       PUBLISH MODAL
     ====================== */
     if (interaction.isModalSubmit() && interaction.customId === "publish_modal") {
 
@@ -141,16 +149,8 @@ client.on("interactionCreate", async (interaction) => {
         .setColor(0x5865F2)
         .setTitle(`📦 ${title}`)
         .addFields(
-          {
-            name: "👤 الناشر",
-            value: `${interaction.user}`,
-            inline: true
-          },
-          {
-            name: "💻 اللغة",
-            value: lang,
-            inline: true
-          }
+          { name: "👤 الناشر", value: `${interaction.user}`, inline: true },
+          { name: "💻 اللغة", value: lang, inline: true }
         )
         .setDescription(`\`\`\`${lang}\n${code}\n\`\`\``)
         .setFooter({ text: "CodeDock • Publish System" })
@@ -161,6 +161,57 @@ client.on("interactionCreate", async (interaction) => {
         embeds: [embed],
         allowedMentions: { parse: ["everyone"] }
       });
+
+      return;
+    }
+
+    /* ======================
+       ADD POST MODAL
+    ====================== */
+    if (interaction.isModalSubmit() && interaction.customId === "add_post_modal") {
+
+      const title = interaction.fields.getTextInputValue("title");
+      const description = interaction.fields.getTextInputValue("description");
+
+      await interaction.reply({
+        content: "✅ تم نشر الإعلان",
+        ephemeral: true
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(0x00b894)
+        .setTitle(`📢 ${title}`)
+        .setDescription(description)
+        .setFooter({ text: "CodeDock • Ad System" })
+        .setTimestamp();
+
+      await interaction.channel.send({ embeds: [embed] });
+
+      return;
+    }
+
+    /* ======================
+       EMBED MODAL
+    ====================== */
+    if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
+
+      const title = interaction.fields.getTextInputValue("title");
+      const description = interaction.fields.getTextInputValue("description");
+      const colorInput = interaction.fields.getTextInputValue("color") || "#5865F2";
+
+      await interaction.reply({
+        content: "✅ تم إرسال الإيمبيد",
+        ephemeral: true
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(colorInput)
+        .setTitle(title)
+        .setDescription(description)
+        .setFooter({ text: "CodeDock • Embed System" })
+        .setTimestamp();
+
+      await interaction.channel.send({ embeds: [embed] });
 
       return;
     }
@@ -178,6 +229,22 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 /* =========================
+   AUTO LINE SYSTEM
+========================= */
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (!AUTO_LINE_CHANNELS.includes(message.channel.id)) return;
+
+  try {
+    await message.channel.send({
+      files: [AUTO_LINE_IMAGE]
+    });
+  } catch (err) {
+    console.error("AUTO LINE ERROR:", err);
+  }
+});
+
+/* =========================
    WELCOME + AUTO ROLE
 ========================= */
 client.on("guildMemberAdd", async (member) => {
@@ -187,21 +254,12 @@ client.on("guildMemberAdd", async (member) => {
 
     const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (channel) {
-      channel.send(`👋 أهلاً بيك ${member} نورت **CodeDock** 💙`);
+      channel.send(`👋 أهلاً بيك ${member} نورت **CodeDock** 💚`);
     }
   } catch (err) {
     console.error("WELCOME ERROR:", err);
   }
 });
-
-/* =========================
-   HANDLERS
-========================= */
-require("./handlers/adminTextCommands")(client);
-require("./handlers/shop")(client);
-require("./handlers/order")(client);
-require("./handlers/roleSale")(client);
-require("./handlers/encrypt")(client);
 
 /* =========================
    READY
