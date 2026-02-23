@@ -6,7 +6,8 @@ const {
   GatewayIntentBits,
   Collection,
   REST,
-  Routes
+  Routes,
+  EmbedBuilder
 } = require("discord.js");
 
 const fs = require("fs");
@@ -87,7 +88,7 @@ const rest = new REST({ version: "10" }).setToken(token);
 })();
 
 /* =========================
-   INTERACTIONS (واحد بس)
+   INTERACTIONS
 ========================= */
 client.on("interactionCreate", async (interaction) => {
   try {
@@ -136,8 +137,29 @@ client.on("interactionCreate", async (interaction) => {
       const channel = interaction.guild.channels.cache.get(PUBLISH_CHANNEL_ID);
       if (!channel) return;
 
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle(`📦 ${title}`)
+        .addFields(
+          {
+            name: "👤 الناشر",
+            value: `${interaction.user}`,
+            inline: true
+          },
+          {
+            name: "💻 اللغة",
+            value: lang,
+            inline: true
+          }
+        )
+        .setDescription(`\`\`\`${lang}\n${code}\n\`\`\``)
+        .setFooter({ text: "CodeDock • Publish System" })
+        .setTimestamp();
+
       await channel.send({
-        content: `📦 **${title}**\n\`\`\`${lang}\n${code}\n\`\`\``
+        content: "@everyone",
+        embeds: [embed],
+        allowedMentions: { parse: ["everyone"] }
       });
 
       return;
