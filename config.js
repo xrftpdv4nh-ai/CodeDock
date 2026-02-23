@@ -22,7 +22,7 @@ module.exports = {
   ],
 
   // لينك الصورة اللي عايزها تتبعت
-  autoLineImage: "https://cdn.discordapp.com/attachments/1475550126217887896/1475583287434149951/1AF1F4B7-A5B0-4E8F-97E6-77FFD4DCA77D.jpg?ex=699e0386&is=699cb206&hm=8db1b67648b7340724491cd4541d249b1e50ceb72aa93b4fc59b49ce6b85f014&",
+  autoLineImage: "https://fv5-7.files.fm/down.php?i=kmmv8hu4h8&view&n=1AF1F4B7-A5B0-4E8F-97E6-77FFD4DCA77D.jpeg",
 
   // كولداون (بالثواني) لمنع السبام
   autoLineCooldown: 5
