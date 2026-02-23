@@ -6,11 +6,7 @@ const {
   GatewayIntentBits,
   Collection,
   REST,
-  Routes,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle
+  Routes
 } = require("discord.js");
 
 const fs = require("fs");
@@ -91,14 +87,16 @@ const rest = new REST({ version: "10" }).setToken(token);
 })();
 
 /* =========================
-   INTERACTIONS
+   INTERACTIONS (واحد بس)
 ========================= */
 client.on("interactionCreate", async (interaction) => {
   try {
-    /* ===== Slash Commands ===== */
+
+    /* ======================
+       1️⃣ Slash Commands
+    ====================== */
     if (interaction.isChatInputCommand()) {
 
-      // قيود publish
       if (interaction.commandName === "publish") {
         if (!PUBLISH_ALLOWED_CHANNELS.includes(interaction.channelId)) {
           return interaction.reply({
@@ -118,13 +116,37 @@ client.on("interactionCreate", async (interaction) => {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
 
-      await command.execute(interaction);
-      
+      return await command.execute(interaction);
+    }
+
+    /* ======================
+       2️⃣ Publish Modal
+    ====================== */
+    if (interaction.isModalSubmit() && interaction.customId === "publish_modal") {
+
+      const title = interaction.fields.getTextInputValue("title");
+      const lang  = interaction.fields.getTextInputValue("lang");
+      const code  = interaction.fields.getTextInputValue("code");
+
+      await interaction.reply({
+        content: "✅ تم نشر الكود بنجاح",
+        ephemeral: true
+      });
+
+      const channel = interaction.guild.channels.cache.get(PUBLISH_CHANNEL_ID);
+      if (!channel) return;
+
+      await channel.send({
+        content: `📦 **${title}**\n\`\`\`${lang}\n${code}\n\`\`\``
+      });
+
+      return;
     }
 
   } catch (err) {
-    console.error("Interaction Error:", err);
-    if (!interaction.replied) {
+    console.error("INTERACTION ERROR:", err);
+
+    if (!interaction.replied && !interaction.deferred) {
       interaction.reply({
         content: "❌ حصل خطأ غير متوقع",
         ephemeral: true
@@ -157,7 +179,7 @@ require("./handlers/adminTextCommands")(client);
 require("./handlers/shop")(client);
 require("./handlers/order")(client);
 require("./handlers/roleSale")(client);
-require("./handlers/encrypt")(client); // 🔐 التشفير
+require("./handlers/encrypt")(client);
 
 /* =========================
    READY
