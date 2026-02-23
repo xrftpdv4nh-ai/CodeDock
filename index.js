@@ -35,11 +35,11 @@ const WELCOME_CHANNEL_ID = "1475552205468864664";
 // Auto Line Channels
 const AUTO_LINE_CHANNELS = [
   "1475550543471710379",
-    "1475550658693304522",
-    "1475550742088650903",
-    "1475550959139688571",
-    "1475550991481962556",
-    "1475550604851155015"
+  "1475550658693304522",
+  "1475550742088650903",
+  "1475550959139688571",
+  "1475550991481962556",
+  "1475550604851155015"
 ];
 
 /* =========================
@@ -103,6 +103,9 @@ const rest = new REST({ version: "10" }).setToken(token);
 client.on("interactionCreate", async (interaction) => {
   try {
 
+    /* ======================
+       SLASH COMMANDS
+    ====================== */
     if (interaction.isChatInputCommand()) {
 
       if (interaction.commandName === "publish") {
@@ -128,7 +131,7 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     /* ======================
-       Publish Modal
+       PUBLISH MODAL
     ====================== */
     if (interaction.isModalSubmit() && interaction.customId === "publish_modal") {
 
@@ -157,6 +160,77 @@ client.on("interactionCreate", async (interaction) => {
 
       await channel.send({
         content: "@everyone",
+        embeds: [embed],
+        allowedMentions: { parse: ["everyone"] }
+      });
+
+      return;
+    }
+
+    /* ======================
+       EMBED MODAL
+    ====================== */
+    if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
+
+      const title = interaction.fields.getTextInputValue("title") || null;
+      const description = interaction.fields.getTextInputValue("description") || null;
+      const imageURL = interaction.fields.getTextInputValue("image") || null;
+      const mentionInput = interaction.fields.getTextInputValue("mention") || "none";
+
+      await interaction.reply({
+        content: "✅ تم إرسال الإيمبيد",
+        ephemeral: true
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTimestamp()
+        .setFooter({ text: "CodeDock • Embed System" });
+
+      if (title) embed.setTitle(title);
+      if (description) embed.setDescription(description);
+      if (imageURL && imageURL.startsWith("http")) embed.setImage(imageURL);
+
+      let mentionText = "";
+      if (mentionInput === "here") mentionText = "@here";
+      if (mentionInput === "everyone") mentionText = "@everyone";
+      if (!isNaN(mentionInput)) mentionText = `<@&${mentionInput}>`;
+
+      await interaction.channel.send({
+        content: mentionText || undefined,
+        embeds: [embed],
+        allowedMentions: { parse: ["everyone", "roles"] }
+      });
+
+      return;
+    }
+
+    /* ======================
+       POST AD MODAL
+    ====================== */
+    if (interaction.isModalSubmit() && interaction.customId === "post_ad_modal") {
+
+      const script = interaction.fields.getTextInputValue("ad_script");
+      const mentionInput = interaction.fields.getTextInputValue("ad_mention") || "none";
+
+      await interaction.reply({
+        content: "✅ تم نشر الإعلان بنجاح",
+        ephemeral: true
+      });
+
+      let mentionText = "";
+      if (mentionInput === "here") mentionText = "@here";
+      if (mentionInput === "everyone") mentionText = "@everyone";
+
+      const embed = new EmbedBuilder()
+        .setColor(0x00b894)
+        .setTitle("📢 إعلان")
+        .setDescription(script)
+        .setFooter({ text: "CodeDock • Advertisement System" })
+        .setTimestamp();
+
+      await interaction.channel.send({
+        content: mentionText || undefined,
         embeds: [embed],
         allowedMentions: { parse: ["everyone"] }
       });
