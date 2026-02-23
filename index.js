@@ -32,17 +32,11 @@ const MEMBERS_ROLE_ID = "1471915317373698211";
 // Welcome
 const WELCOME_CHANNEL_ID = "1475552205468864664";
 
-// Auto Line
+// Auto Line Channels
 const AUTO_LINE_CHANNELS = [
-   "1475550543471710379",
-    "1475550658693304522",
-    "1475550742088650903",
-    "1475550959139688571",
-    "1475550991481962556",
-    "1475550604851155015",
+  "1475550991481962556",
+  "1475550959139688571"
 ];
-
-const AUTO_LINE_IMAGE = "PUT_IMAGE_LINK_HERE";
 
 /* =========================
    CLIENT
@@ -105,9 +99,6 @@ const rest = new REST({ version: "10" }).setToken(token);
 client.on("interactionCreate", async (interaction) => {
   try {
 
-    /* ======================
-       SLASH COMMANDS
-    ====================== */
     if (interaction.isChatInputCommand()) {
 
       if (interaction.commandName === "publish") {
@@ -133,7 +124,7 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     /* ======================
-       PUBLISH MODAL
+       Publish Modal
     ====================== */
     if (interaction.isModalSubmit() && interaction.customId === "publish_modal") {
 
@@ -169,57 +160,6 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
-    /* ======================
-       ADD POST MODAL
-    ====================== */
-    if (interaction.isModalSubmit() && interaction.customId === "add_post_modal") {
-
-      const title = interaction.fields.getTextInputValue("title");
-      const description = interaction.fields.getTextInputValue("description");
-
-      await interaction.reply({
-        content: "✅ تم نشر الإعلان",
-        ephemeral: true
-      });
-
-      const embed = new EmbedBuilder()
-        .setColor(0x00b894)
-        .setTitle(`📢 ${title}`)
-        .setDescription(description)
-        .setFooter({ text: "CodeDock • Ad System" })
-        .setTimestamp();
-
-      await interaction.channel.send({ embeds: [embed] });
-
-      return;
-    }
-
-    /* ======================
-       EMBED MODAL
-    ====================== */
-    if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
-
-      const title = interaction.fields.getTextInputValue("title");
-      const description = interaction.fields.getTextInputValue("description");
-      const colorInput = interaction.fields.getTextInputValue("color") || "#5865F2";
-
-      await interaction.reply({
-        content: "✅ تم إرسال الإيمبيد",
-        ephemeral: true
-      });
-
-      const embed = new EmbedBuilder()
-        .setColor(colorInput)
-        .setTitle(title)
-        .setDescription(description)
-        .setFooter({ text: "CodeDock • Embed System" })
-        .setTimestamp();
-
-      await interaction.channel.send({ embeds: [embed] });
-
-      return;
-    }
-
   } catch (err) {
     console.error("INTERACTION ERROR:", err);
 
@@ -235,13 +175,16 @@ client.on("interactionCreate", async (interaction) => {
 /* =========================
    AUTO LINE SYSTEM
 ========================= */
+
+const autoLineImagePath = path.join(__dirname, "assets", "codedock-line.png");
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!AUTO_LINE_CHANNELS.includes(message.channel.id)) return;
 
   try {
     await message.channel.send({
-      files: [AUTO_LINE_IMAGE]
+      files: [autoLineImagePath]
     });
   } catch (err) {
     console.error("AUTO LINE ERROR:", err);
@@ -258,12 +201,21 @@ client.on("guildMemberAdd", async (member) => {
 
     const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (channel) {
-      channel.send(`👋 أهلاً بيك ${member} نورت **CodeDock** 💚`);
+      channel.send(`👋 أهلاً بيك ${member} نورت **CodeDock** 💙`);
     }
   } catch (err) {
     console.error("WELCOME ERROR:", err);
   }
 });
+
+/* =========================
+   HANDLERS
+========================= */
+require("./handlers/adminTextCommands")(client);
+require("./handlers/shop")(client);
+require("./handlers/order")(client);
+require("./handlers/roleSale")(client);
+require("./handlers/encrypt")(client);
 
 /* =========================
    READY
