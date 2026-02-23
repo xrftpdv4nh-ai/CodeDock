@@ -273,8 +273,15 @@ if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
 const autoLineImagePath = path.join(__dirname, "assets", "codedock-line.png");
 
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
+
+  // امنع أي بوت غير بوتك
+  if (message.author.bot && message.author.id !== client.user.id) return;
+
+  // اشتغل بس في الرومات المحددة
   if (!AUTO_LINE_CHANNELS.includes(message.channel.id)) return;
+
+  // امنع لو الرسالة نفسها صورة الخط (عشان ميعملش loop)
+  if (message.attachments.some(att => att.name === "codedock-line.png")) return;
 
   try {
     await message.channel.send({
