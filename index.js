@@ -174,10 +174,10 @@ if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
 
   try {
 
-    const title = interaction.fields.getTextInputValue("title") || "";
-    const description = interaction.fields.getTextInputValue("description") || "";
-    const imageURL = interaction.fields.getTextInputValue("image") || "";
-    const mentionInput = interaction.fields.getTextInputValue("mention") || "none";
+    const title = interaction.fields.getTextInputValue("embed_title") || "";
+    const description = interaction.fields.getTextInputValue("embed_desc") || "";
+    const imageURL = interaction.fields.getTextInputValue("embed_image") || "";
+    const mentionInput = interaction.fields.getTextInputValue("embed_mention") || "none";
 
     await interaction.reply({
       content: "✅ تم إرسال الإيمبيد",
