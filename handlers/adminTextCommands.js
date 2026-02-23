@@ -12,6 +12,19 @@ module.exports = (client) => {
     const args = message.content.trim().split(/\s+/);
     const command = args.shift().toLowerCase();
 
+    // 🧹 امسح رسالة الأمر
+    await message.delete().catch(() => {});
+
+    // 📩 رسالة تأكيد خاصة
+    const sendPrivate = async (text) => {
+      try {
+        const msg = await message.author.send(text);
+        setTimeout(() => msg.delete().catch(() => {}), 5000);
+      } catch (err) {
+        console.log("DM Closed");
+      }
+    };
+
     /* =====================
        ADD ROLE
     ===================== */
@@ -21,7 +34,7 @@ module.exports = (client) => {
       if (!member || !role) return;
 
       await member.roles.add(role);
-      return message.reply(`✅ تم إضافة ${role} لـ ${member}`);
+      return sendPrivate(`✅ تم إضافة ${role.name} إلى ${member.user.tag}`);
     }
 
     /* =====================
@@ -33,7 +46,7 @@ module.exports = (client) => {
       if (!member || !role) return;
 
       await member.roles.remove(role);
-      return message.reply(`✅ تم إزالة ${role} من ${member}`);
+      return sendPrivate(`✅ تم إزالة ${role.name} من ${member.user.tag}`);
     }
 
     /* =====================
@@ -45,7 +58,7 @@ module.exports = (client) => {
       if (!member) return;
 
       await member.ban({ reason });
-      return message.reply(`🔨 تم حظر ${member.user.tag}`);
+      return sendPrivate(`🔨 تم حظر ${member.user.tag}`);
     }
 
     /* =====================
@@ -56,25 +69,24 @@ module.exports = (client) => {
       if (!userId) return;
 
       await message.guild.members.unban(userId);
-      return message.reply(`✅ تم فك الحظر عن ${userId}`);
+      return sendPrivate(`✅ تم فك الحظر عن ${userId}`);
     }
 
     /* =====================
-       MUTE (TIMEOUT)
+       MUTE
     ===================== */
     if (command === "mute") {
       const member = message.mentions.members.first();
-      const time = args[1]; // مثال: 10m
+      const time = args[1];
       if (!member || !time) return;
 
       let duration = 0;
       if (time.endsWith("m")) duration = parseInt(time) * 60 * 1000;
       if (time.endsWith("h")) duration = parseInt(time) * 60 * 60 * 1000;
-
-      if (!duration) return message.reply("❌ حدد وقت صحيح مثل 10m أو 1h");
+      if (!duration) return sendPrivate("❌ وقت غير صحيح (10m / 1h)");
 
       await member.timeout(duration);
-      return message.reply(`🔇 تم ميوت ${member} لمدة ${time}`);
+      return sendPrivate(`🔇 تم ميوت ${member.user.tag} لمدة ${time}`);
     }
 
     /* =====================
@@ -85,7 +97,7 @@ module.exports = (client) => {
       if (!member) return;
 
       await member.timeout(null);
-      return message.reply(`🔊 تم فك الميوت عن ${member}`);
+      return sendPrivate(`🔊 تم فك الميوت عن ${member.user.tag}`);
     }
 
     /* =====================
@@ -96,7 +108,7 @@ module.exports = (client) => {
         message.guild.roles.everyone,
         { ViewChannel: true }
       );
-      return message.reply("👁️ تم إظهار الروم");
+      return sendPrivate("👁️ تم إظهار الروم");
     }
 
     /* =====================
@@ -107,7 +119,7 @@ module.exports = (client) => {
         message.guild.roles.everyone,
         { ViewChannel: false }
       );
-      return message.reply("🚫 تم إخفاء الروم");
+      return sendPrivate("🚫 تم إخفاء الروم");
     }
 
     /* =====================
@@ -118,32 +130,9 @@ module.exports = (client) => {
         message.guild.roles.everyone,
         { SendMessages: false }
       );
-      return message.reply("🔒 تم قفل الروم");
+      return sendPrivate("🔒 تم قفل الروم");
     }
-/* =====================
-   HELP (ADMIN ONLY)
-===================== */
-if (command === "help") {
-  return message.reply(`
-📌 **Admin Commands Help**
 
-**Role Management**
-- addrole @user @role
-- removerole @user @role
-
-**Moderation**
-- ban @user [reason]
-- unban userId
-- mute @user time (10m / 1h)
-- unmute @user
-
-**Channel Control**
-- show
-- unshow
-- lock
-- unlock
-`);
-}
     /* =====================
        UNLOCK
     ===================== */
@@ -152,7 +141,25 @@ if (command === "help") {
         message.guild.roles.everyone,
         { SendMessages: true }
       );
-      return message.reply("🔓 تم فتح الروم");
+      return sendPrivate("🔓 تم فتح الروم");
+    }
+
+    /* =====================
+       HELP
+    ===================== */
+    if (command === "help") {
+      return sendPrivate(`
+📌 Admin Commands
+
+addrole @user @role
+removerole @user @role
+ban @user [reason]
+unban userId
+mute @user 10m / 1h
+unmute @user
+show / unshow
+lock / unlock
+`);
     }
 
   });
