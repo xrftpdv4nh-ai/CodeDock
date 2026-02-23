@@ -167,43 +167,59 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
-    /* ======================
-       EMBED MODAL
-    ====================== */
-    if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
+/* ======================
+   EMBED MODAL
+====================== */
+if (interaction.isModalSubmit() && interaction.customId === "embed_modal") {
 
-      const title = interaction.fields.getTextInputValue("title") || null;
-      const description = interaction.fields.getTextInputValue("description") || null;
-      const imageURL = interaction.fields.getTextInputValue("image") || null;
-      const mentionInput = interaction.fields.getTextInputValue("mention") || "none";
+  try {
 
-      await interaction.reply({
-        content: "✅ تم إرسال الإيمبيد",
-        ephemeral: true
-      });
+    const title = interaction.fields.getTextInputValue("title") || "";
+    const description = interaction.fields.getTextInputValue("description") || "";
+    const imageURL = interaction.fields.getTextInputValue("image") || "";
+    const mentionInput = interaction.fields.getTextInputValue("mention") || "none";
 
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTimestamp()
-        .setFooter({ text: "CodeDock • Embed System" });
+    await interaction.reply({
+      content: "✅ تم إرسال الإيمبيد",
+      ephemeral: true
+    });
 
-      if (title) embed.setTitle(title);
-      if (description) embed.setDescription(description);
-      if (imageURL && imageURL.startsWith("http")) embed.setImage(imageURL);
+    const embed = new EmbedBuilder()
+      .setColor(0x5865F2)
+      .setFooter({ text: "CodeDock • Embed System" })
+      .setTimestamp();
 
-      let mentionText = "";
-      if (mentionInput === "here") mentionText = "@here";
-      if (mentionInput === "everyone") mentionText = "@everyone";
-      if (!isNaN(mentionInput)) mentionText = `<@&${mentionInput}>`;
+    if (title.trim() !== "") embed.setTitle(title);
+    if (description.trim() !== "") embed.setDescription(description);
 
-      await interaction.channel.send({
-        content: mentionText || undefined,
-        embeds: [embed],
-        allowedMentions: { parse: ["everyone", "roles"] }
-      });
-
-      return;
+    if (imageURL.trim() !== "" && imageURL.startsWith("http")) {
+      embed.setImage(imageURL);
     }
+
+    let mentionText = "";
+
+    if (mentionInput === "here") mentionText = "@here";
+    if (mentionInput === "everyone") mentionText = "@everyone";
+    if (!isNaN(mentionInput) && mentionInput !== "") {
+      mentionText = `<@&${mentionInput}>`;
+    }
+
+    await interaction.channel.send({
+      content: mentionText || undefined,
+      embeds: [embed],
+      allowedMentions: { parse: ["everyone", "roles"] }
+    });
+
+  } catch (err) {
+    console.error("EMBED ERROR:", err);
+    return interaction.reply({
+      content: "❌ حصل خطأ أثناء إنشاء الإيمبيد",
+      ephemeral: true
+    });
+  }
+
+  return;
+}
 
     /* ======================
        POST AD MODAL
